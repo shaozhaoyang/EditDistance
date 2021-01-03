@@ -143,8 +143,8 @@ public class EXEDAlgorithm {
                 queryGraphMapping = pruningAlgorithm.getQueryGraphMapping();
                 queryGraphMapping.entrySet().forEach(en -> {
                     System.out.println(en.getKey() + ": " + en.getValue().size());
-                    en.getValue().forEach(val -> System.out.print(val.getNodeID() + ","));
-                    System.out.println();
+//                    en.getValue().forEach(val -> System.out.print(val.getNodeID() + ","));
+//                    System.out.println();
                 });
 //			this.exCandidatesNum = queryGraphMapping.get(startingNode).size();
 //			System.out.println("ex before:" + exCandidatesNum);

@@ -27,6 +27,7 @@ import eu.unitn.disi.db.grava.graphs.Multigraph;
 import eu.unitn.disi.db.grava.utils.BloomFilter;
 import eu.unitn.disi.db.grava.vectorization.MemoryNeighborTables;
 import eu.unitn.disi.db.grava.vectorization.NeighborTables;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -193,6 +194,7 @@ public class ComputeGraphNeighbors extends Algorithm {
         // END DECLARATIONS
         try {
             // Start a BFS on the whole graph
+            System.out.println("start bfs");
             if (nodeProcessed != null) {
                 graphNodes = nodeProcessed.toArray(new Long[nodeProcessed
                         .size()]);
@@ -200,6 +202,7 @@ public class ComputeGraphNeighbors extends Algorithm {
                 graphNodes = graph.vertexSet().toArray(
                         new Long[graph.vertexSet().size()]);
             }
+            System.out.println("start multi tasks");
             if (graphNodes.length > numThreads * 2) {
                 tableNodeFuture = new ArrayList<>();
                 chunkSize = (int) Math.round(graphNodes.length / numThreads
@@ -216,6 +219,7 @@ public class ComputeGraphNeighbors extends Algorithm {
                     Future<NeighborTables> future = tableNodeFuture.get(i);
                     tables = future.get();
                     neighborTables.merge(tables);
+                    System.out.println("finish compute neighborhood " + m);
                     m++;
                 }
             } else {
@@ -371,8 +375,9 @@ public class ComputeGraphNeighbors extends Algorithm {
                 } // END FOR
                 count++;
                 // debug("Processed %d nodes", count);
-                if (debugThreads && count % 1000 == 0) {
-                    debug("[T%d] Processed %d nodes", id, count);
+                if (count % 5000 == 0) {
+                    System.out.println(Instant.now() + ": " +  Thread.currentThread().toString() +  " Computed "
+                            + "neighbor " +  count);
                 }
             } // END FOR
             if (debugThreads) {

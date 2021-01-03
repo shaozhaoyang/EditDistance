@@ -18,7 +18,8 @@ public class RandomQueryGenerator {
 
     private static void writeToFile(Set<String> query, String node, int maxFreq, int crtFreq) {
         try {
-            String fileName = "queryFolder/10000nodes/new-test/random-freq-" + maxFreq + "/E8" + node + "_" + crtFreq + ".txt";
+            String fileName =
+                    "queryFolder/1000000nodes" + "/E8" + node + "_" + crtFreq + ".txt";
             final BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
             for (String str : query) {
                 writer.write(str);
@@ -39,14 +40,20 @@ public class RandomQueryGenerator {
         return list.get(RANDOM.nextInt(list.size()));
     }
 
-    public void generateQuery(Multigraph G) {
+    public void generateQuery(Multigraph G, List<Long> nodes) {
         int maxEdgeNum = 8;
-        G.vertexSet();
-        List<Long> nodes = new ArrayList<>(G.vertexSet());
         Set<String> query = new HashSet<>();
         int currentFreq = 0;
-        int maxFreq = 2000;
-        Long startingNode = nodes.get(RANDOM.nextInt(nodes.size()));
+        int maxFreq = 5000;
+
+        Long startingNode = null;
+
+        while (true) {
+            startingNode =  nodes.get(RANDOM.nextInt(nodes.size()));
+            if (G.outgoingEdgesOf(startingNode).size() > 1 && G.incomingEdgesOf(startingNode).size() > 1) {
+                break;
+            }
+        }
         int edgeNum = 0;
         Set<Long> visited = new HashSet<>();
         Set<Edge> edgesNotWanted = new HashSet<>();
@@ -73,17 +80,17 @@ public class RandomQueryGenerator {
             while (!candidates.isEmpty()) {
                 Edge edge = getRandomEdge(candidates);
                 int freq = G.getLabelFreq().get(edge.getLabel()).getFrequency();
-                if (currentFreq + freq <= maxFreq) {
+//                if (currentFreq + freq <= maxFreq) {
                     query.add(edgeOutput(edge));
                     edgeNum++;
                     currentFreq += freq;
                     Long nextNode = edge.getSource().equals(currentNode) ? edge.getDestination() : edge.getSource();
                     currentNode = RANDOM.nextBoolean() ? nextNode : currentNode;
                     break;
-                } else {
-                    candidates.remove(edge);
-                    edgesNotWanted.add(edge);
-                }
+//                } else {
+//                    candidates.remove(edge);
+//                    edgesNotWanted.add(edge);
+//                }
             }
         }
 

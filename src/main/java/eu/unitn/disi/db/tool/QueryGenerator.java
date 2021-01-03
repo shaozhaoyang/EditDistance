@@ -20,20 +20,20 @@ public class QueryGenerator {
     private static final Random RANDOM = new Random();
 
     public static void main(String[] args) throws IOException, ParseException {
-        String graphName = "graph/10000nodes";
+        String graphName = "graph/1000000nodes";
 
         Multigraph G = new BigMultigraph(graphName + "-sin.graph", graphName
                 + "-sout.graph");
         RandomQueryGenerator queryGenerator = new RandomQueryGenerator();
+        List<Long> nodes = new ArrayList<>(G.vertexSet());
         for (int i = 0; i < 50000; i++) {
-            queryGenerator.generateQuery(G);
+            queryGenerator.generateQuery(G, nodes);
         }
     }
 
     private static void generateQuery(Multigraph G) {
         int maxEdgeNum = 8;
         int current = 0;
-        G.vertexSet();
         List<Long> nodes = new ArrayList<>(G.vertexSet());
         Set<String> query = new HashSet<>();
         Set<Long> labels = new HashSet<>();
@@ -92,7 +92,7 @@ public class QueryGenerator {
 
     private static void writeToFile(Set<String> query, String node) {
         try {
-            String fileName = "queryFolder/10000nodes/freq-500/E8" + node + ".txt";
+            String fileName = "queryFolder/1000000nodes/E8" + node + ".txt";
             final BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
             for (String str : query) {
                 writer.write(str);

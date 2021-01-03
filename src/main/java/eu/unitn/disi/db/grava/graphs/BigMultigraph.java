@@ -112,12 +112,16 @@ public class BigMultigraph implements Multigraph, Iterable<Long>  {
             Utilities.binaryTableSort(outEdges);
         }
 
-        vertexes = new HashSet<>();
+        vertexes = new HashSet<>(inEdges.length / 2);
         try{
             for (int i = 0; i < inEdges.length; i++) {
                 vertexes.add(inEdges[i][0]);
                 vertexes.add(inEdges[i][1]);
+                if (i % 50000 == 0) {
+                    System.out.printf("Processed %d lines of inEdges\n", i);
+                }
             }
+            System.out.println("finish load");
         }catch(Exception e){
             System.out.println(vertexes==null);
             System.out.println(inEdges==null);
