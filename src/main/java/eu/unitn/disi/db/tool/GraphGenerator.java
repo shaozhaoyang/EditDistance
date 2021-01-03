@@ -7,22 +7,15 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
-import java.util.zip.GZIPInputStream;
-import org.mapdb.DB;
-import org.mapdb.DBMaker;
-import org.mapdb.Serializer;
 
 /**
  *
@@ -60,7 +53,7 @@ public class GraphGenerator {
         FileInputStream fin = new FileInputStream(fileName);
         InputStreamReader xover = new InputStreamReader(fin);
         BufferedReader is = new BufferedReader(xover);
-        BufferedWriter bw = new BufferedWriter(new FileWriter("graph_" + MAX_NODE_COUNT  + ".txt", false));
+        BufferedWriter bw = new BufferedWriter(new FileWriter("graph_" + MAX_NODE_COUNT + ".txt", false));
         String line;
         // Now read lines of text: the BufferedReader puts them in lines,
         // the InputStreamReader does Unicode conversion, and the
@@ -96,8 +89,10 @@ public class GraphGenerator {
 
                 count++;
                 if (count % 100000 == 0) {
-                    System.out.println("Processed " + count + " lines; " + " nodes count " + allNodes.size() + "; crtNode " + crtNodeId + "; queue "
-                            + "peek " + queue.peek() + " queue size:" + queue.size());
+                    System.out.println(
+                            "Processed " + count + " lines; " + " nodes count " + allNodes.size() + "; crtNode "
+                                    + crtNodeId + "; queue "
+                                    + "peek " + queue.peek() + " queue size:" + queue.size());
                 }
                 if (subjectId.equals(crtNodeId)) {
                     continue;
@@ -145,8 +140,8 @@ public class GraphGenerator {
 //                	write(writer, edges.subList(0, MAX_DEGREE));
 //                    queue.addAll(nodes.subList(0, MAX_DEGREE));
 //                } else {
-					write(writer, edges);
-                    queue.addAll(nodes);
+                write(writer, edges);
+                queue.addAll(nodes);
 //                }
                 visited.add(crtNode);
                 edgeMap.remove(crtNode);
@@ -160,8 +155,8 @@ public class GraphGenerator {
 
     private void write(final BufferedWriter writer, final Queue<Edge> edges) throws IOException {
         for (Edge e : edges) {
-			writer.write(e.getSource() + " " + e.getDestination() + " " + e.getLabel());
-			writer.newLine();
+            writer.write(e.getSource() + " " + e.getDestination() + " " + e.getLabel());
+            writer.newLine();
         }
         writer.flush();
     }

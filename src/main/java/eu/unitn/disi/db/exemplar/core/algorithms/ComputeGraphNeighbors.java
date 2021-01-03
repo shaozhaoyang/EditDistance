@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
@@ -76,11 +75,16 @@ public class ComputeGraphNeighbors extends Algorithm {
         pathTables = new HashMap<>();
         conCount = new HashMap<>();
         Collection<Long> nodeSet = graph.vertexSet();
+        int count = 0;
         for (Long node : nodeSet) {
             BloomFilter<String> bf = new BloomFilter<>(0.001, 10000);
             Map<String, Integer> countMap = new HashMap<>();
             dfs(node, new HashSet<>(), new HashSet<>(), countMap, new StringBuilder(), 0, bf, new ArrayList<>());
             this.pathTables.put(node, bf);
+            count ++;
+            if (count % 5000 == 0) {
+                System.out.println("processed " + count);
+            }
         }
     }
 

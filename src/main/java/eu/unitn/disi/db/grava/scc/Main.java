@@ -33,7 +33,7 @@ public class Main {
 			for (int i = 1; i <= 1; i++) {
 				Experiement exp = new Experiement(repititions, i, threadsNum, neighbourNum, graphName,
 						queryFolder, outputFile, isUsingWildCard);
-				exp.runExperiement(EXED, Filter.NEIGHBOUR);
+				exp.runExperiement(EXED, Filter.PATH);
 			}
 
 //            for (int i = 1; i <= 3; i++) {
