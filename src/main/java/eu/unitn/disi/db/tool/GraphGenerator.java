@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
@@ -28,7 +29,7 @@ import java.util.stream.Collectors;
 public class GraphGenerator {
 
     private static final long MAX_NODE_COUNT = 1000000;
-    private static final int MAX_DEGREE = 30;
+    private static final int MAX_DEGREE = 50;
     private long nodeCount = 0;
 
     public GraphGenerator(String fileName) throws IOException {
@@ -65,6 +66,7 @@ public class GraphGenerator {
         long crtNodeId = 48L;
         Set<Long> visited = new HashSet<>();
         Set<Long> allNodes = new HashSet<>();
+        Map<Long, Integer> countMap = new HashMap<>();
         try {
             int count = 0;
 
@@ -81,9 +83,9 @@ public class GraphGenerator {
                 Long predicateId = Long.parseLong(words[2]);
 
                 edges.add(new Edge(subjectId, objectId, predicateId));
-                if (edges.size() > MAX_DEGREE) {
-                    edges.poll();
-                }
+//                if (edges.size() > MAX_DEGREE * 2) {
+//                    edges.poll();
+//                }
 
                 edgeMap.put(crtNodeId, edges);
 
@@ -97,7 +99,7 @@ public class GraphGenerator {
                 if (subjectId.equals(crtNodeId)) {
                     continue;
                 } else if (crtNodeId == queue.peek()) {
-                    bfs(bw, edgeMap, queue, visited, allNodes);
+                    bfs(bw, edgeMap, queue, visited, allNodes, countMap);
                 } else if (crtNodeId > queue.peek()) {
                     queue.poll();
                 }
@@ -118,7 +120,7 @@ public class GraphGenerator {
     }
 
     private void bfs(final BufferedWriter writer, final Map<Long, Queue<Edge>> edgeMap, final Queue<Long> queue,
-                     final Set<Long> visited, final Set<Long> allNodes) throws IOException {
+                     final Set<Long> visited, final Set<Long> allNodes, final Map<Long, Integer> countMap) throws IOException {
         while (!queue.isEmpty() && allNodes.size() < MAX_NODE_COUNT) {
             if (edgeMap.get(queue.peek()) != null) {
                 Long crtNode = queue.poll();
@@ -126,21 +128,42 @@ public class GraphGenerator {
                     continue;
                 }
                 Queue<Edge> edges = edgeMap.get(crtNode);
-                List<Long> nodes = edges.stream()
+                List<Edge> usedEdges = new LinkedList<>();
+                int count = 0;
+                for (Edge edge : edges) {
+                    int sourceCount = countMap.getOrDefault(edge.getSource(), 0);
+                    sourceCount++;
+
+                    int dstCount = countMap.getOrDefault(edge.getDestination(), 0);
+                    dstCount++;
+
+
+                    countMap.put(edge.getSource(), sourceCount);
+                    countMap.put(edge.getDestination(), dstCount);
+
+                    if (sourceCount <= MAX_DEGREE && dstCount <= MAX_DEGREE) {
+                        usedEdges.add(edge);
+                        count++;
+                        if (count > MAX_DEGREE) {
+                            break;
+                        }
+                    }
+                }
+                List<Long> nodes = usedEdges.stream()
                         .map(Edge::getDestination)
                         .filter(node -> !visited.contains(node))
                         .collect(Collectors.toList());
-                edges.stream()
+                usedEdges.stream()
                         .map(Edge::getDestination)
                         .forEach(allNodes::add);
-                edges.stream()
+                usedEdges.stream()
                         .map(Edge::getSource)
                         .forEach(allNodes::add);
 //                if (edges.size() >= MAX_DEGREE) {
 //                	write(writer, edges.subList(0, MAX_DEGREE));
 //                    queue.addAll(nodes.subList(0, MAX_DEGREE));
 //                } else {
-                write(writer, edges);
+                write(writer, usedEdges);
                 queue.addAll(nodes);
 //                }
                 visited.add(crtNode);
@@ -153,7 +176,7 @@ public class GraphGenerator {
         }
     }
 
-    private void write(final BufferedWriter writer, final Queue<Edge> edges) throws IOException {
+    private void write(final BufferedWriter writer, final List<Edge> edges) throws IOException {
         for (Edge e : edges) {
             writer.write(e.getSource() + " " + e.getDestination() + " " + e.getLabel());
             writer.newLine();

@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -72,23 +73,41 @@ public class ComputeGraphNeighbors extends Algorithm {
     // private int tid;
 
     public void computePathFilter() {
-        pathTables = new HashMap<>();
+
         conCount = new HashMap<>();
         Collection<Long> nodeSet = graph.vertexSet();
+        pathTables = new HashMap<>(nodeSet.size());
         int count = 0;
+        Set<Edge> visitedEdges = new HashSet<>();
+        Set<Long> visitedNodes = new HashSet<>();
+        List<String> labels = new LinkedList<>();
+        StringBuilder stringBuilder = new StringBuilder(50);
         for (Long node : nodeSet) {
-            BloomFilter<String> bf = new BloomFilter<>(0.001, 10000);
-            Map<String, Integer> countMap = new HashMap<>();
-            dfs(node, new HashSet<>(), new HashSet<>(), countMap, new StringBuilder(), 0, bf, new ArrayList<>());
+            BloomFilter<String> bf = new BloomFilter<>(0.001, 1000);
+            Map<String, Integer> countMap = new HashMap<>(500);
+            if (node == 76554851849548L) {
+                System.out.println("");
+            }
+            long startTime = Instant.now().toEpochMilli();
+            visitedEdges.clear();
+            visitedNodes.clear();
+            labels.clear();
+            stringBuilder.setLength(0);
+            dfs(node, visitedEdges, visitedNodes, countMap, stringBuilder, 0, bf, labels);
+            long dfsTime = Instant.now().toEpochMilli() - startTime;
+            if (dfsTime > 100) {
+                System.out.println(node + " takes " + (Instant.now().toEpochMilli() - startTime));
+            }
+
             this.pathTables.put(node, bf);
             count ++;
             if (count % 5000 == 0) {
-                System.out.println("processed " + count);
+                System.out.println(Instant.now() + " processed " + count);
             }
         }
     }
 
-    public void dfs(Long node, Set<Edge> visited, Set<Long> visitedNodes,
+    public void  dfs(Long node, Set<Edge> visited, Set<Long> visitedNodes,
 					Map<String, Integer> countMap,
 					StringBuilder sb, int depth,
                     BloomFilter<String> bf, List<String> labels) {
@@ -125,6 +144,7 @@ public class ComputeGraphNeighbors extends Algorithm {
         int length = sb.length();
         visitedNodes.add(node);
         int size = labels.size();
+        long start = Instant.now().toEpochMilli();
         for (Edge e : graph.outgoingEdgesOf(node)) {
             Long nextNode = e.getDestination().equals(node) ? e.getSource() : e.getDestination();
             if (!visited.contains(e) && !nextNode.equals(node)) {
@@ -142,6 +162,13 @@ public class ComputeGraphNeighbors extends Algorithm {
                 labels.remove(size);
             }
         }
+        long outStart = Instant.now().toEpochMilli();
+        long outTime =  outStart - start;
+        if (outTime > 100) {
+            System.out
+                    .println(node + " visited " + visitedNodes + " out size:" + graph.outgoingEdgesOf(node).size() + " "
+                            + " time:" + outTime);
+        }
 
         for (Edge e : graph.incomingEdgesOf(node)) {
             Long nextNode = e.getDestination().equals(node) ? e.getSource() : e.getDestination();
@@ -158,6 +185,12 @@ public class ComputeGraphNeighbors extends Algorithm {
                 labels.remove(size);
                 sb.setLength(length);
             }
+        }
+        long inTime = Instant.now().toEpochMilli() - outStart;
+        if (inTime > 100) {
+            System.out
+                    .println(node + " visited " + visitedNodes + " in size:" + graph.incomingEdgesOf(node).size() + " "
+                            + " time:" + inTime);
         }
         visitedNodes.remove(node);
         if (labels.size() == 1) {
