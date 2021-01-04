@@ -30,6 +30,7 @@ import eu.unitn.disi.db.grava.graphs.MappedNode;
 import eu.unitn.disi.db.grava.graphs.Multigraph;
 import eu.unitn.disi.db.grava.graphs.StructureMapping;
 import eu.unitn.disi.db.grava.utils.BloomFilter;
+import eu.unitn.disi.db.grava.utils.Pair;
 import eu.unitn.disi.db.grava.utils.Utilities;
 import eu.unitn.disi.db.grava.vectorization.NeighborTables;
 import eu.unitn.disi.db.grava.vectorization.PathNeighborTables;
@@ -45,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import javafx.util.Pair;
 
 /**
  * Pruning algorithm using neighborhood information for each node.
