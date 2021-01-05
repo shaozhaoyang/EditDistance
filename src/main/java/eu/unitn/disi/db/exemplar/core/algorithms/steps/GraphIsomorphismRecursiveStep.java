@@ -185,9 +185,10 @@ public class GraphIsomorphismRecursiveStep extends AlgorithmStep<RelatedQuery> {
             //if (watch.getElapsedTimeMillis() > WARN_TIME) {
             //    info("Computation %d [%d] took %d ms", threadNumber, Thread.currentThread().getId(), watch.getElapsedTimeMillis());
             //}
-            System.out.println(node + " takes " + stopWatch.getElapsedTimeSecs());
-            System.out.println("Answer size:" + relatedQueries.size());
+
         }
+        System.out.println(graphNodes + " one batch takes " + stopWatch.getElapsedTimeSecs());
+        System.out.println("Answer size:" + relatedQueries.size());
         watch.stop();
         return new LinkedList<>(relatedQueries);
     }

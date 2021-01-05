@@ -143,7 +143,7 @@ public class WildCardAlgorithm {
                 pruningAlgorithm.setQueryTables(queryTables);
                 pruningAlgorithm.setThreshold(0);
                 pruningAlgorithm.compute();
-                System.out.println(queryName + "pruning takes " + watch.getElapsedTimeMillis());
+                System.out.println(queryName + " pruning takes " + watch.getElapsedTimeMillis());
 
                 Map<Long, Set<MappedNode>> queryGraphMapping = pruningAlgorithm.getQueryGraphMapping();
 

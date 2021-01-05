@@ -14,6 +14,7 @@ import eu.unitn.disi.db.grava.graphs.MappedNode;
 import eu.unitn.disi.db.grava.graphs.Multigraph;
 import eu.unitn.disi.db.query.WildCardQuery;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -53,9 +54,8 @@ public class BFWildCardAlgorithm {
 
         StopWatch total = new StopWatch();
         total.start();
-        Set<RelatedQuery> relatedQueries = new HashSet<>();
+        Set<RelatedQuery> relatedQueries = new HashSet<>(1000);
         if (threshold != 0) {
-            HashSet<RelatedQuery> relatedQueriesUnique = new HashSet<>();
             WildCardQuery wcq = new WildCardQuery(threshold);
             wcq.run(queryName);
             Set<Multigraph> wildCardQueries = new LinkedHashSet<>(wcq.getWcQueries());
@@ -82,7 +82,9 @@ public class BFWildCardAlgorithm {
             try {
                 CompletableFuture.allOf(tasks.toArray(new CompletableFuture<?>[0])).join();
                 for (CompletableFuture<List<RelatedQuery>> task : tasks) {
+                    long start = Instant.now().toEpochMilli();
                     relatedQueries.addAll(task.get());
+                    System.out.println("join one batch " + (Instant.now().toEpochMilli() - start));
                 }
 
             } catch (InterruptedException e) {
@@ -120,14 +122,14 @@ public class BFWildCardAlgorithm {
 
             pruningAlgorithm.setThreshold(0);
             pruningAlgorithm.computeWithPath();
-            System.out.println(queryName + "pruning takes " + watch.getElapsedTimeMillis());
+            System.out.println(queryName + " pruning takes " + watch.getElapsedTimeMillis());
 
             Map<Long, Set<MappedNode>> queryGraphMapping = pruningAlgorithm.getQueryGraphMapping();
 
             queryGraphMapping.entrySet().forEach(en -> {
                 System.out.println(en.getKey() + ": " + en.getValue().size());
-                en.getValue().forEach(val -> System.out.print(val.getNodeID() + ","));
-                System.out.println();
+//                en.getValue().forEach(val -> System.out.print(val.getNodeID() + ","));
+//                System.out.println();
             });
             watch.reset();
 

@@ -4,7 +4,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ThreadPoolFactory {
-    private static final ExecutorService WILDCARD_THREAD_POOL = Executors.newFixedThreadPool(8);
+    private static final ExecutorService WILDCARD_THREAD_POOL = Executors.newFixedThreadPool(50);
     private static final ExecutorService TABLE_COMPUTE_THREAD_POOL = Executors.newFixedThreadPool(8);
     private static final ExecutorService SEARCH_THREAD_POOL = Executors.newFixedThreadPool(1);
 
