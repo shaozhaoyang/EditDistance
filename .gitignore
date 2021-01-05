@@ -16,7 +16,7 @@ output/
 freebase*
 graph_*
 # OS.X
-
+*.class
 .DS_Store
 .AppleDouble
 .LSOverride
