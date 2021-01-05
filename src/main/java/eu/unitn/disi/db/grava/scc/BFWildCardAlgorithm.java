@@ -55,11 +55,12 @@ public class BFWildCardAlgorithm {
         StopWatch total = new StopWatch();
         total.start();
         Set<RelatedQuery> relatedQueries = new HashSet<>(1000);
+        System.out.println("starting point " + Instant.now().toEpochMilli());
         if (threshold != 0) {
             WildCardQuery wcq = new WildCardQuery(threshold);
             wcq.run(queryName);
             Set<Multigraph> wildCardQueries = new LinkedHashSet<>(wcq.getWcQueries());
-
+            System.out.println("after wc point " + Instant.now().toEpochMilli());
             Iterator<Multigraph> iterator = wildCardQueries.iterator();
             int size = wildCardQueries.size();
             List<CompletableFuture<List<RelatedQuery>>> tasks = new ArrayList<>();
@@ -79,8 +80,10 @@ public class BFWildCardAlgorithm {
                     tasks.add(task);
                 }
             }
+            System.out.println("created tasks point " + Instant.now().toEpochMilli());
             try {
                 CompletableFuture.allOf(tasks.toArray(new CompletableFuture<?>[0])).join();
+                System.out.println("join all tasks point " + Instant.now().toEpochMilli());
                 for (CompletableFuture<List<RelatedQuery>> task : tasks) {
                     long start = Instant.now().toEpochMilli();
                     relatedQueries.addAll(task.get());
