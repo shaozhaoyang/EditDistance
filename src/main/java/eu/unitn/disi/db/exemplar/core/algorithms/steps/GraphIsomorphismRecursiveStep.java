@@ -187,10 +187,12 @@ public class GraphIsomorphismRecursiveStep extends AlgorithmStep<RelatedQuery> {
             //}
 
         }
-        System.out.println(graphNodes + " one batch takes " + stopWatch.getElapsedTimeSecs());
-        System.out.println("Answer size:" + relatedQueries.size());
+
         watch.stop();
-        return new LinkedList<>(relatedQueries);
+        List<RelatedQuery> results = new LinkedList<>(relatedQueries);
+        System.out.println(Thread.currentThread() + ":" + graphNodes + " one batch takes " + stopWatch.getElapsedTimeSecs());
+        System.out.println(Thread.currentThread() + ":" + "Answer size:" + relatedQueries.size());
+        return results;
     }
 
     /**

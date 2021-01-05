@@ -72,7 +72,10 @@ public class BFWildCardAlgorithm {
                 for (Callable<List<RelatedQuery>> work : works) {
                     executorService.execute(() -> {
                         try {
+                            long start = Instant.now().toEpochMilli();
+                            System.out.println(Thread.currentThread() + " before task:" + start);
                             task.complete(work.call());
+                            System.out.println(Thread.currentThread() + " after task:" + (Instant.now().toEpochMilli() - start));
                         } catch (Throwable exception) {
                             task.completeExceptionally(exception);
                         }
