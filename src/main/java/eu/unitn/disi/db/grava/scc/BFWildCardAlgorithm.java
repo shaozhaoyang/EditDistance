@@ -4,6 +4,7 @@ import eu.unitn.disi.db.command.exceptions.AlgorithmExecutionException;
 import eu.unitn.disi.db.command.util.StopWatch;
 import eu.unitn.disi.db.exemplar.core.RelatedQuery;
 import eu.unitn.disi.db.exemplar.core.StartingNodeAlgorithm;
+import eu.unitn.disi.db.exemplar.core.StartingNodeBaseAlgorithm;
 import eu.unitn.disi.db.exemplar.core.StartingNodePathFreqAlgorithm;
 import eu.unitn.disi.db.exemplar.core.algorithms.CompletableIsomorphicQuerySearch;
 import eu.unitn.disi.db.exemplar.core.algorithms.ComputeGraphNeighbors;
@@ -103,11 +104,10 @@ public class BFWildCardAlgorithm {
         CompletableIsomorphicQuerySearch edAlgorithm = new CompletableIsomorphicQuerySearch();
         for (int exprimentTime1 = 0; exprimentTime1 < repititions; exprimentTime1++) {
             StopWatch watch = new StopWatch();
-            StartingNodeAlgorithm startingNodeAlgorithm = new StartingNodePathFreqAlgorithm(
-                    graphTableAlgorithm.getPathFreqMap(),
-                    graphTableAlgorithm.getTotalNumOfPath(),
-                    neighbourNum);
-            startingNode = startingNodeAlgorithm.getStartingNode(wildCardQuery);
+
+            StartingNodeAlgorithm startingNodeAlgorithm = new StartingNodeBaseAlgorithm(G.getLabelFreq());
+
+            startingNode = startingNodeAlgorithm.getStartingNodes(wildCardQuery).get(0);
 //						InfoNode info = new InfoNode(startingNode);
             // System.out.println("starting node:" + startingNode);
             PruningAlgorithm pruningAlgorithm = new PruningAlgorithm();
