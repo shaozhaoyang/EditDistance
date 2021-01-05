@@ -70,20 +70,26 @@ public class BFWildCardAlgorithm {
                 CompletableFuture<List<RelatedQuery>> task = new CompletableFuture<>();
                 List<Callable<List<RelatedQuery>>> works = createWork(G, currentQuery);
                 for (Callable<List<RelatedQuery>> work : works) {
-                    executorService.execute(() -> {
-                        try {
-                            long start = Instant.now().toEpochMilli();
-                            System.out.println(Thread.currentThread() + " before task:" + start);
-                            task.complete(work.call());
-                            System.out.println(Thread.currentThread() + " after task:" + (Instant.now().toEpochMilli() - start));
-                        } catch (Throwable exception) {
-                            task.completeExceptionally(exception);
-                        }
-                    });
-                    tasks.add(task);
+                       tasks.add(CompletableFuture.supplyAsync(() -> {try {
+                            return work.call();
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }}, executorService));
+
+//                    executorService.execute(() -> {
+//                        try {
+//                            long start = Instant.now().toEpochMilli();
+//                            System.out.println(Thread.currentThread() + " before task:" + start);
+//                            task.complete(work.call());
+//                            System.out.println(Thread.currentThread() + " after task:" + (Instant.now().toEpochMilli() - start));
+//                        } catch (Throwable exception) {
+//                            task.completeExceptionally(exception);
+//                        }
+//                    });
+//                    tasks.add(task);
                 }
             }
-            System.out.println("created tasks point " + Instant.now().toEpochMilli());
+            System.out.println(Thread.currentThread() + ":created tasks point " + Instant.now().toEpochMilli());
             try {
                 CompletableFuture.allOf(tasks.toArray(new CompletableFuture<?>[0])).join();
                 System.out.println("join all tasks point " + Instant.now().toEpochMilli());
