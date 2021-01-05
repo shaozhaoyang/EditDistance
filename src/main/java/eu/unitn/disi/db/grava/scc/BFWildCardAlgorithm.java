@@ -55,12 +55,12 @@ public class BFWildCardAlgorithm {
         StopWatch total = new StopWatch();
         total.start();
         Set<RelatedQuery> relatedQueries = new HashSet<>(1000);
-        System.out.println("starting point " + Instant.now().toEpochMilli());
+        System.out.println("starting point " + total.getElapsedTimeMillis());
         if (threshold != 0) {
             WildCardQuery wcq = new WildCardQuery(threshold);
             wcq.run(queryName);
             Set<Multigraph> wildCardQueries = new LinkedHashSet<>(wcq.getWcQueries());
-            System.out.println("after wc point " + Instant.now().toEpochMilli());
+            System.out.println("after wc point " + total.getElapsedTimeMillis());
             Iterator<Multigraph> iterator = wildCardQueries.iterator();
             int size = wildCardQueries.size();
             List<CompletableFuture<List<RelatedQuery>>> tasks = new ArrayList<>();
@@ -68,7 +68,7 @@ public class BFWildCardAlgorithm {
 
                 Multigraph currentQuery = iterator.next();
                 CompletableFuture<List<RelatedQuery>> task = new CompletableFuture<>();
-                List<Callable<List<RelatedQuery>>> works = createWork(G, currentQuery);
+                List<Callable<List<RelatedQuery>>> works = createWork(G, currentQuery, total);
                 for (Callable<List<RelatedQuery>> work : works) {
                        tasks.add(CompletableFuture.supplyAsync(() -> {try {
                             return work.call();
@@ -87,12 +87,14 @@ public class BFWildCardAlgorithm {
 //                        }
 //                    });
 //                    tasks.add(task);
+
+                    System.out.println(Thread.currentThread() + ":one task " + total.getElapsedTimeMillis());
                 }
             }
-            System.out.println(Thread.currentThread() + ":created tasks point " + Instant.now().toEpochMilli());
+            System.out.println(Thread.currentThread() + ":created tasks point " + total.getElapsedTimeMillis());
             try {
                 CompletableFuture.allOf(tasks.toArray(new CompletableFuture<?>[0])).join();
-                System.out.println("join all tasks point " + Instant.now().toEpochMilli());
+                System.out.println("join all tasks point " + total.getElapsedTimeMillis());
                 for (CompletableFuture<List<RelatedQuery>> task : tasks) {
                     long start = Instant.now().toEpochMilli();
                     relatedQueries.addAll(task.get());
@@ -112,12 +114,11 @@ public class BFWildCardAlgorithm {
                 + " answer size:" + relatedQueries.size());
     }
 
-    private List<Callable<List<RelatedQuery>>> createWork(Multigraph graph, Multigraph wildCardQuery)
+    private List<Callable<List<RelatedQuery>>> createWork(Multigraph graph, Multigraph wildCardQuery, StopWatch watch)
             throws AlgorithmExecutionException {
         Long startingNode;
         CompletableIsomorphicQuerySearch edAlgorithm = new CompletableIsomorphicQuerySearch();
         for (int exprimentTime1 = 0; exprimentTime1 < repititions; exprimentTime1++) {
-            StopWatch watch = new StopWatch();
 
             StartingNodeAlgorithm startingNodeAlgorithm = new StartingNodeBaseAlgorithm(G.getLabelFreq());
 
@@ -143,7 +144,6 @@ public class BFWildCardAlgorithm {
 //                en.getValue().forEach(val -> System.out.print(val.getNodeID() + ","));
 //                System.out.println();
             });
-            watch.reset();
 
             try {
                 edAlgorithm.setStartingNode(startingNode);
