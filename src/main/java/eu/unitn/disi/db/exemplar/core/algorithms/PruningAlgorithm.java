@@ -319,6 +319,11 @@ public class PruningAlgorithm extends Algorithm {
 
 
                         if (this.matchesWithPathNeighbor(graphCandidate, currentQueryNode, queryPaths, pathPrefix)) {
+
+                            System.out.println(Thread.currentThread() + " " + currentQueryNode + " graph node " + graphCandidate + " query "
+                                    + "paths takes "
+                                    + total.getElapsedTimeMillis());
+
                             numberOfComparison++;
                             mappedNodes.add(graphCandidate);
 //                            medium = Utilities.bsCount;
@@ -327,10 +332,11 @@ public class PruningAlgorithm extends Algorithm {
                                     candidateNextLevel, true);
                             mapNodes(graphCandidate, graph.outgoingEdgesOf(graphCandidate.getNodeID()), outQueryEdges,
                                     candidateNextLevel, false);
+
+                            System.out.println(Thread.currentThread() + " " + currentQueryNode + " map graph node " + graphCandidate + " query "
+                                    + "paths takes "
+                                    + total.getElapsedTimeMillis());
 //                            System.out.println(medium + " " + Utilities.bsCount);
-                            if (testSize != nodesToVisit.size()) {
-                                System.out.print("");
-                            }
                         }
                     }
                     System.out.println(Thread.currentThread() + " " + currentQueryNode + " graph size " + mappedNodes.size() + " query "
@@ -943,9 +949,6 @@ public class PruningAlgorithm extends Algorithm {
         Map<String, Edge> prefixMap = pathPrefix.get(qNode);
         Map<String, Integer> wildcardPaths = new HashMap<>();
         Set<Edge> seenPrefixEdges = new HashSet<>();
-        if (mappedGNode.getNodeID() == 7068545648L && qNode == 529080524948L) {
-            System.out.print("");
-        }
 
         for (Entry<String, Integer> path : queryPaths.get(qNode).entrySet()) {
             Edge prefixEdge = prefixMap.get(path.getKey());
