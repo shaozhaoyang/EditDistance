@@ -256,7 +256,6 @@ public class PruningAlgorithm extends Algorithm {
         Integer frequency;
         LinkedList<Long> queryNodeToVisit = new LinkedList<>();
         List<MappedNode> nodesToVisit;
-        Collection<Edge> graphEdges = graph.edgeSet();
         Collection<Edge> queryEdges;
 
         Map<Long, List<Long>> inQueryEdges;
@@ -265,14 +264,14 @@ public class PruningAlgorithm extends Algorithm {
         Set<MappedNode> mappedNodes;
         Set<Long> visitedQueryNodes = new HashSet<>();
         int i;
-        for (Edge e : graphEdges) {
-            frequency = labelFrequency.get(e.getLabel());
-            if (frequency == null) {
-                frequency = 0;
-            }
-            frequency++;
-            labelFrequency.put(e.getLabel(), frequency);
-        }
+//        for (Edge e : graphEdges) {
+//            frequency = labelFrequency.get(e.getLabel());
+//            if (frequency == null) {
+//                frequency = 0;
+//            }
+//            frequency++;
+//            labelFrequency.put(e.getLabel(), frequency);
+//        }
         //Just to try - Candidate is the first
         if (startingNode == null) {
             candidate = queryNodes.iterator().next();
@@ -294,9 +293,6 @@ public class PruningAlgorithm extends Algorithm {
             while (!queryNodeToVisit.isEmpty()) {
 
                 currentQueryNode = queryNodeToVisit.poll();
-                if (currentQueryNode == 8378838984494948L) {
-                    System.out.print("");
-                }
                 visitSeq.add(currentQueryNode);
                 mappedNodes = queryGraphMapping.get(currentQueryNode);
 
@@ -355,8 +351,6 @@ public class PruningAlgorithm extends Algorithm {
             ex.printStackTrace();
             throw new AlgorithmExecutionException("Some other problem occurred", ex);
         }
-//        this.computeTimeCost();
-        //Choose the node with the least frequency.
     }
 
     private Map<Long, Map<String, Integer>> queryPaths(final Map<Long, Map<String, Edge>> pathPrefixMap) {
