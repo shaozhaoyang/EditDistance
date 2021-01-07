@@ -125,7 +125,7 @@ public class BFWildCardAlgorithm {
                 pruningAlgorithm.setgPathTables(graphTableAlgorithm.getPathTables());
 
                 pruningAlgorithm.setThreshold(0);
-                pruningAlgorithm.computeWithPath();
+                pruningAlgorithm.computeWithPath(watch);
                 System.out.println(queryName + Thread.currentThread() + " pruning takes " + watch.getElapsedTimeMillis());
 
                 Map<Long, Set<MappedNode>> queryGraphMapping = pruningAlgorithm.getQueryGraphMapping();

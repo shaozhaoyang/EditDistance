@@ -21,6 +21,7 @@ import eu.unitn.disi.db.command.algorithmic.Algorithm;
 import eu.unitn.disi.db.command.algorithmic.AlgorithmInput;
 import eu.unitn.disi.db.command.algorithmic.AlgorithmOutput;
 import eu.unitn.disi.db.command.exceptions.AlgorithmExecutionException;
+import eu.unitn.disi.db.command.util.StopWatch;
 import eu.unitn.disi.db.grava.exceptions.DataException;
 import eu.unitn.disi.db.grava.graphs.BaseMultigraph;
 import eu.unitn.disi.db.grava.graphs.BigMultigraph;
@@ -34,7 +35,6 @@ import eu.unitn.disi.db.grava.utils.Pair;
 import eu.unitn.disi.db.grava.utils.Utilities;
 import eu.unitn.disi.db.grava.vectorization.NeighborTables;
 import eu.unitn.disi.db.grava.vectorization.PathNeighborTables;
-import eu.unitn.disi.db.mutilities.StopWatch;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -229,7 +229,7 @@ public class PruningAlgorithm extends Algorithm {
     }
 
 
-    public void computeWithPath()
+    public void computeWithPath(StopWatch total)
             throws AlgorithmExecutionException {
         //Initialize the output.
         bsCount = 0;
@@ -282,6 +282,7 @@ public class PruningAlgorithm extends Algorithm {
         queryNodeToVisit.add(candidate);
         Map<Long, Map<String, Edge>> pathPrefix = new HashMap<>();
         Map<Long, Map<String, Integer>> queryPaths = queryPaths(pathPrefix);
+        System.out.println(Thread.currentThread() + " query paths takes " + total.getElapsedTimeMillis());
         //Initialize the candidate qnode -> gnode
         for (Long node : queryNodes) {
             candidateNextLevel.put(node, new HashSet<>());
@@ -332,7 +333,9 @@ public class PruningAlgorithm extends Algorithm {
                             }
                         }
                     }
-
+                    System.out.println(Thread.currentThread() + " " + currentQueryNode + " graph size " + mappedNodes.size() + " query "
+                            + "paths takes "
+                            + total.getElapsedTimeMillis());
                     queryGraphMapping.put(currentQueryNode, mappedNodes);
                     candidates.put(currentQueryNode, mappedNodes.size());
 

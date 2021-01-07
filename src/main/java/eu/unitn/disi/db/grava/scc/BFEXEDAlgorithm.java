@@ -1,6 +1,7 @@
 package eu.unitn.disi.db.grava.scc;
 
 import eu.unitn.disi.db.command.exceptions.AlgorithmExecutionException;
+import eu.unitn.disi.db.command.util.StopWatch;
 import eu.unitn.disi.db.exemplar.core.RelatedQuery;
 import eu.unitn.disi.db.exemplar.core.StartingNodeAlgorithm;
 import eu.unitn.disi.db.exemplar.core.StartingNodeBaseAlgorithm;
@@ -13,8 +14,6 @@ import eu.unitn.disi.db.grava.graphs.MappedNode;
 import eu.unitn.disi.db.grava.graphs.Multigraph;
 import eu.unitn.disi.db.grava.utils.Utilities;
 import eu.unitn.disi.db.grava.vectorization.NeighborTables;
-import eu.unitn.disi.db.mutilities.StopWatch;
-import eu.unitn.disi.db.tool.AnswerManagement;
 import eu.unitn.disi.db.tool.ThreadPoolFactory;
 import java.io.IOException;
 import java.util.HashSet;
@@ -121,7 +120,7 @@ public class BFEXEDAlgorithm {
                 pruningAlgorithm.setQueryTables(queryTables);
                 pruningAlgorithm.setThreshold(this.threshold);
                 pruningAlgorithm.setgPathTables(computeGraphNeighbors.getPathTables());
-                pruningAlgorithm.computeWithPath();
+                pruningAlgorithm.computeWithPath(detailedWatch);
                 System.out.println("Pruning takes " + detailedWatch.getElapsedTimeMillis());
 
                 queryGraphMapping = pruningAlgorithm.getQueryGraphMapping();
