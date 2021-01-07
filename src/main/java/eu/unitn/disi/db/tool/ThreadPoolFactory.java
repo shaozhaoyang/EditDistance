@@ -4,12 +4,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ThreadPoolFactory {
-    private static final ExecutorService WILDCARD_THREAD_POOL = Executors.newFixedThreadPool(50);
+    private static final ExecutorService WILDCARD_SEARCH_THREAD_POOL = Executors.newFixedThreadPool(16);
+    private static final ExecutorService WILDCARD_THREAD_POOL = Executors.newFixedThreadPool(8);
     private static final ExecutorService TABLE_COMPUTE_THREAD_POOL = Executors.newFixedThreadPool(8);
     private static final ExecutorService SEARCH_THREAD_POOL = Executors.newFixedThreadPool(1);
 
     public static ExecutorService getWildcardThreadPool() {
         return WILDCARD_THREAD_POOL;
+    }
+
+    public static ExecutorService getWildcardSearchThreadPool() {
+        return WILDCARD_SEARCH_THREAD_POOL;
     }
 
     public static ExecutorService getTableComputeThreadPool() {
@@ -24,5 +29,6 @@ public class ThreadPoolFactory {
         WILDCARD_THREAD_POOL.shutdown();
         TABLE_COMPUTE_THREAD_POOL.shutdown();
         SEARCH_THREAD_POOL.shutdown();
+        WILDCARD_SEARCH_THREAD_POOL.shutdown();
     }
 }

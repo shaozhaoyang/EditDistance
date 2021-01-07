@@ -8,11 +8,13 @@ import eu.unitn.disi.db.exemplar.core.StartingNodeBaseAlgorithm;
 import eu.unitn.disi.db.exemplar.core.StartingNodePathFreqAlgorithm;
 import eu.unitn.disi.db.exemplar.core.algorithms.CompletableIsomorphicQuerySearch;
 import eu.unitn.disi.db.exemplar.core.algorithms.ComputeGraphNeighbors;
+import eu.unitn.disi.db.exemplar.core.algorithms.IsomorphicQuerySearch;
 import eu.unitn.disi.db.exemplar.core.algorithms.PruningAlgorithm;
 import eu.unitn.disi.db.grava.exceptions.ParseException;
 import eu.unitn.disi.db.grava.graphs.MappedNode;
 import eu.unitn.disi.db.grava.graphs.Multigraph;
 import eu.unitn.disi.db.query.WildCardQuery;
+import eu.unitn.disi.db.tool.ThreadPoolFactory;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -63,39 +65,27 @@ public class BFWildCardAlgorithm {
             System.out.println("after wc point " + total.getElapsedTimeMillis());
             Iterator<Multigraph> iterator = wildCardQueries.iterator();
             int size = wildCardQueries.size();
-            List<CompletableFuture<List<RelatedQuery>>> tasks = new ArrayList<>();
+            List<CompletableFuture<Set<RelatedQuery>>> tasks = new ArrayList<>();
             for (int i = 0; i < size; i++) {
 
                 Multigraph currentQuery = iterator.next();
                 CompletableFuture<List<RelatedQuery>> task = new CompletableFuture<>();
-                List<Callable<List<RelatedQuery>>> works = createWork(G, currentQuery, total);
-                for (Callable<List<RelatedQuery>> work : works) {
-                       tasks.add(CompletableFuture.supplyAsync(() -> {try {
-                            return work.call();
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }}, executorService));
+                Callable<Set<RelatedQuery>> work = createWork(G, currentQuery, total);
+                tasks.add(CompletableFuture.supplyAsync(() -> {try {
+                    return work.call();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }}, executorService));
 
-//                    executorService.execute(() -> {
-//                        try {
-//                            long start = Instant.now().toEpochMilli();
-//                            System.out.println(Thread.currentThread() + " before task:" + start);
-//                            task.complete(work.call());
-//                            System.out.println(Thread.currentThread() + " after task:" + (Instant.now().toEpochMilli() - start));
-//                        } catch (Throwable exception) {
-//                            task.completeExceptionally(exception);
-//                        }
-//                    });
-//                    tasks.add(task);
 
-                    System.out.println(Thread.currentThread() + ":one task " + total.getElapsedTimeMillis());
-                }
+                System.out.println(Thread.currentThread() + ":one task " + total.getElapsedTimeMillis());
+
             }
             System.out.println(Thread.currentThread() + ":created tasks point " + total.getElapsedTimeMillis());
             try {
                 CompletableFuture.allOf(tasks.toArray(new CompletableFuture<?>[0])).join();
                 System.out.println("join all tasks point " + total.getElapsedTimeMillis());
-                for (CompletableFuture<List<RelatedQuery>> task : tasks) {
+                for (CompletableFuture<Set<RelatedQuery>> task : tasks) {
                     long start = Instant.now().toEpochMilli();
                     relatedQueries.addAll(task.get());
                     System.out.println("join one batch " + (Instant.now().toEpochMilli() - start));
@@ -114,51 +104,54 @@ public class BFWildCardAlgorithm {
                 + " answer size:" + relatedQueries.size());
     }
 
-    private List<Callable<List<RelatedQuery>>> createWork(Multigraph graph, Multigraph wildCardQuery, StopWatch watch)
+    private Callable<Set<RelatedQuery>> createWork(Multigraph graph, Multigraph wildCardQuery, StopWatch watch)
             throws AlgorithmExecutionException {
-        Long startingNode;
-        CompletableIsomorphicQuerySearch edAlgorithm = new CompletableIsomorphicQuerySearch();
-        for (int exprimentTime1 = 0; exprimentTime1 < repititions; exprimentTime1++) {
+        return () -> {
+            Long startingNode;
+            IsomorphicQuerySearch edAlgorithm = new IsomorphicQuerySearch();
+            for (int exprimentTime1 = 0; exprimentTime1 < repititions; exprimentTime1++) {
 
-            StartingNodeAlgorithm startingNodeAlgorithm = new StartingNodeBaseAlgorithm(G.getLabelFreq());
+                StartingNodeAlgorithm startingNodeAlgorithm = new StartingNodeBaseAlgorithm(G.getLabelFreq());
 
-            startingNode = startingNodeAlgorithm.getStartingNodes(wildCardQuery).get(0);
+                startingNode = startingNodeAlgorithm.getStartingNodes(wildCardQuery).get(0);
 //						InfoNode info = new InfoNode(startingNode);
-            // System.out.println("starting node:" + startingNode);
-            PruningAlgorithm pruningAlgorithm = new PruningAlgorithm();
-            // Set starting node according to sels of nodes.
-            pruningAlgorithm.setStartingNode(startingNode);
-            pruningAlgorithm.setGraph(graph);
-            pruningAlgorithm.setQuery(wildCardQuery);
-            pruningAlgorithm.setK(neighbourNum);
-            pruningAlgorithm.setgPathTables(graphTableAlgorithm.getPathTables());
+                // System.out.println("starting node:" + startingNode);
+                PruningAlgorithm pruningAlgorithm = new PruningAlgorithm();
+                // Set starting node according to sels of nodes.
+                pruningAlgorithm.setStartingNode(startingNode);
+                pruningAlgorithm.setGraph(graph);
+                pruningAlgorithm.setQuery(wildCardQuery);
+                pruningAlgorithm.setK(neighbourNum);
+                pruningAlgorithm.setgPathTables(graphTableAlgorithm.getPathTables());
 
-            pruningAlgorithm.setThreshold(0);
-            pruningAlgorithm.computeWithPath();
-            System.out.println(queryName + " pruning takes " + watch.getElapsedTimeMillis());
+                pruningAlgorithm.setThreshold(0);
+                pruningAlgorithm.computeWithPath();
+                System.out.println(queryName + " pruning takes " + watch.getElapsedTimeMillis());
 
-            Map<Long, Set<MappedNode>> queryGraphMapping = pruningAlgorithm.getQueryGraphMapping();
+                Map<Long, Set<MappedNode>> queryGraphMapping = pruningAlgorithm.getQueryGraphMapping();
 
-            queryGraphMapping.entrySet().forEach(en -> {
-                System.out.println(en.getKey() + ": " + en.getValue().size());
+                queryGraphMapping.entrySet().forEach(en -> {
+                    System.out.println(en.getKey() + ": " + en.getValue().size());
 //                en.getValue().forEach(val -> System.out.print(val.getNodeID() + ","));
 //                System.out.println();
-            });
+                });
 
-            try {
-                edAlgorithm.setStartingNode(startingNode);
-                edAlgorithm.setLabelFreq((graph).getLabelFreq());
-                edAlgorithm.setQuery(wildCardQuery);
-                edAlgorithm.setGraph(pruningAlgorithm.pruneGraph());
-                edAlgorithm.setNumThreads(this.threadsNum);
-                edAlgorithm.setQueryToGraphMap(pruningAlgorithm.getQueryGraphMapping());
-                edAlgorithm.setLimitedComputation(false);
-                edAlgorithm.compute();
-            } catch (AlgorithmExecutionException e) {
-                System.out.println("testing exception" + graph);
+                try {
+                    edAlgorithm.setStartingNode(startingNode);
+                    edAlgorithm.setLabelFreq((graph).getLabelFreq());
+                    edAlgorithm.setQuery(wildCardQuery);
+                    edAlgorithm.setGraph(pruningAlgorithm.pruneGraph());
+                    edAlgorithm.setNumThreads(this.threadsNum);
+                    edAlgorithm.setQueryToGraphMap(pruningAlgorithm.getQueryGraphMapping());
+                    edAlgorithm.setLimitedComputation(false);
+                    edAlgorithm.setExecutionPool(ThreadPoolFactory.getWildcardSearchThreadPool());
+                    edAlgorithm.compute();
+                } catch (AlgorithmExecutionException e) {
+                    System.out.println("testing exception" + graph);
+                }
             }
-        }
-        return edAlgorithm.getCallables();
+            return edAlgorithm.getRelatedQueries();
+        };
     }
 
     public void setGraphTableAlgorithm(final ComputeGraphNeighbors graphTableAlgorithm) {
