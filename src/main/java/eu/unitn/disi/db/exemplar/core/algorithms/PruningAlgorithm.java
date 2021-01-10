@@ -318,7 +318,7 @@ public class PruningAlgorithm extends Algorithm {
                         graphCandidate = nodesToVisit.get(i);
 
 
-                        if (this.matchesWithPathNeighbor(graphCandidate, currentQueryNode, queryPaths, pathPrefix)) {
+                        if (this.matchesWithPathNeighbor(graphCandidate, currentQueryNode, queryPaths, pathPrefix, total)) {
 
                             System.out.println(Thread.currentThread() + " " + currentQueryNode + " graph node " + graphCandidate + " query "
                                     + "paths takes "
@@ -939,7 +939,7 @@ public class PruningAlgorithm extends Algorithm {
     }
 
     private boolean matchesWithPathNeighbor(MappedNode mappedGNode, long qNode, Map<Long, Map<String, Integer>> queryPaths,
-                                            Map<Long, Map<String, Edge>> pathPrefix) throws DataException {
+                                            Map<Long, Map<String, Edge>> pathPrefix, StopWatch total) throws DataException {
         BloomFilter<String> bf = gPathTables.get(mappedGNode.getNodeID());
         int count = 0;
         boolean isGood = true;
@@ -950,6 +950,9 @@ public class PruningAlgorithm extends Algorithm {
         Map<String, Integer> wildcardPaths = new HashMap<>();
         Set<Edge> seenPrefixEdges = new HashSet<>();
 
+        System.out.println(Thread.currentThread() + " " + qNode + " graph node " + mappedGNode + " query "
+                + "paths takes "
+                + total.getElapsedTimeMillis());
         for (Entry<String, Integer> path : queryPaths.get(qNode).entrySet()) {
             Edge prefixEdge = prefixMap.get(path.getKey());
             String label = (prefixEdge.getSource().equals(qNode) ? "" : "-") + prefixEdge.getLabel();
@@ -977,12 +980,19 @@ public class PruningAlgorithm extends Algorithm {
             }
         }
 
+        System.out.println(Thread.currentThread() + " " + qNode + " path size " + queryPaths.get(qNode).size() +
+                "paths takes "
+                + total.getElapsedTimeMillis());
+
         for (Entry<String, Integer> pathCount : wildcardPaths.entrySet()) {
             count += checkDiff(bf, pathCount.getKey(), pathCount.getValue());
             if (count > this.threshold) {
                 return false;
             }
         }
+        System.out.println(Thread.currentThread() + " " + qNode + " wildcard size " + wildcardPaths.size() +
+                "paths takes "
+                + total.getElapsedTimeMillis());
         return true;
     }
 
