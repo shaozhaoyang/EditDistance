@@ -282,7 +282,6 @@ public class PruningAlgorithm extends Algorithm {
         queryNodeToVisit.add(candidate);
         Map<Long, Map<String, Edge>> pathPrefix = new HashMap<>();
         Map<Long, Map<String, Integer>> queryPaths = queryPaths(pathPrefix);
-        System.out.println(Thread.currentThread() + " query paths takes " + total.getElapsedTimeMillis());
         //Initialize the candidate qnode -> gnode
         for (Long node : queryNodes) {
             candidateNextLevel.put(node, new HashSet<>());
@@ -320,10 +319,6 @@ public class PruningAlgorithm extends Algorithm {
 
                         if (this.matchesWithPathNeighbor(graphCandidate, currentQueryNode, queryPaths, pathPrefix, total)) {
 
-                            System.out.println(Thread.currentThread() + " " + currentQueryNode + " graph node " + graphCandidate + " query "
-                                    + "paths takes "
-                                    + total.getElapsedTimeMillis());
-
                             numberOfComparison++;
                             mappedNodes.add(graphCandidate);
 //                            medium = Utilities.bsCount;
@@ -333,11 +328,11 @@ public class PruningAlgorithm extends Algorithm {
                             mapNodes(graphCandidate, graph.outgoingEdgesOf(graphCandidate.getNodeID()), outQueryEdges,
                                     candidateNextLevel, false);
 
-                            System.out.println(Thread.currentThread() + " " + currentQueryNode + " map graph node " + graphCandidate + " query "
-                                    + "paths takes "
-                                    + total.getElapsedTimeMillis());
 //                            System.out.println(medium + " " + Utilities.bsCount);
                         }
+                        System.out.println(Thread.currentThread() + " " + currentQueryNode + " graph node " + graphCandidate + " query "
+                                + "paths takes "
+                                + total.getElapsedTimeMillis());
                     }
                     System.out.println(Thread.currentThread() + " " + currentQueryNode + " graph size " + mappedNodes.size() + " query "
                             + "paths takes "
@@ -950,9 +945,9 @@ public class PruningAlgorithm extends Algorithm {
         Map<String, Integer> wildcardPaths = new HashMap<>();
         Set<Edge> seenPrefixEdges = new HashSet<>();
 
-        System.out.println(Thread.currentThread() + " " + qNode + " graph node " + mappedGNode + " query "
-                + "paths takes "
-                + total.getElapsedTimeMillis());
+//        System.out.println(Thread.currentThread() + " " + qNode + " graph node " + mappedGNode + " query "
+//                + "paths takes "
+//                + total.getElapsedTimeMillis());
         for (Entry<String, Integer> path : queryPaths.get(qNode).entrySet()) {
             Edge prefixEdge = prefixMap.get(path.getKey());
             String label = (prefixEdge.getSource().equals(qNode) ? "" : "-") + prefixEdge.getLabel();
@@ -980,9 +975,9 @@ public class PruningAlgorithm extends Algorithm {
             }
         }
 
-        System.out.println(Thread.currentThread() + " " + qNode + " path size " + queryPaths.get(qNode).size() +
-                "paths takes "
-                + total.getElapsedTimeMillis());
+//        System.out.println(Thread.currentThread() + " " + qNode + " path size " + queryPaths.get(qNode).size() +
+//                "paths takes "
+//                + total.getElapsedTimeMillis());
 
         for (Entry<String, Integer> pathCount : wildcardPaths.entrySet()) {
             count += checkDiff(bf, pathCount.getKey(), pathCount.getValue());
