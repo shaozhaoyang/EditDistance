@@ -17,13 +17,11 @@
  */
 package eu.unitn.disi.db.exemplar.core.algorithms;
 
-import com.google.common.collect.Lists;
 import eu.unitn.disi.db.command.algorithmic.Algorithm;
 import eu.unitn.disi.db.command.algorithmic.AlgorithmInput;
 import eu.unitn.disi.db.command.algorithmic.AlgorithmOutput;
 import eu.unitn.disi.db.command.exceptions.AlgorithmExecutionException;
 import eu.unitn.disi.db.command.util.StopWatch;
-import eu.unitn.disi.db.exemplar.core.RelatedQuery;
 import eu.unitn.disi.db.grava.exceptions.DataException;
 import eu.unitn.disi.db.grava.graphs.BaseMultigraph;
 import eu.unitn.disi.db.grava.graphs.BigMultigraph;
@@ -37,7 +35,6 @@ import eu.unitn.disi.db.grava.utils.Pair;
 import eu.unitn.disi.db.grava.utils.Utilities;
 import eu.unitn.disi.db.grava.vectorization.NeighborTables;
 import eu.unitn.disi.db.grava.vectorization.PathNeighborTables;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -256,18 +253,20 @@ public class PruningAlgorithm extends Algorithm {
             }
             candidateNextLevel.put(candidate, nodesPartitions.get(i));
             Callable<Map<Long, Set<MappedNode>>> work = computePathCallable(candidateNextLevel, total);
-            tasks.add(CompletableFuture.supplyAsync(() -> {try {
-                return work.call();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }}, pool));
+            tasks.add(CompletableFuture.supplyAsync(() -> {
+                try {
+                    return work.call();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }, pool));
         }
 
         try {
             CompletableFuture.allOf(tasks.toArray(new CompletableFuture<?>[0])).join();
             System.out.println("join all tasks point " + total.getElapsedTimeMillis());
             for (CompletableFuture<Map<Long, Set<MappedNode>>> task : tasks) {
-                Map<Long, Set<MappedNode>> crtMap =  task.get();
+                Map<Long, Set<MappedNode>> crtMap = task.get();
                 for (Entry<Long, Set<MappedNode>> entry : crtMap.entrySet()) {
                     Set<MappedNode> nodes = queryGraphMapping.getOrDefault(entry.getKey(), new HashSet<>());
                     nodes.addAll(entry.getValue());
@@ -287,11 +286,11 @@ public class PruningAlgorithm extends Algorithm {
         int crtSize = 0;
         int partition = 1;
         Set<MappedNode> crtSet = new HashSet<>();
-        for (MappedNode node: nodes) {
+        for (MappedNode node : nodes) {
             crtSet.add(node);
             crtSize++;
             if (crtSize > partition * size) {
-                partition ++;
+                partition++;
                 partitions.add(crtSet);
                 crtSet = new HashSet<>();
             }
@@ -308,8 +307,9 @@ public class PruningAlgorithm extends Algorithm {
         return candidateNextLevel;
     }
 
-    private Callable<Map<Long, Set<MappedNode>>> computePathCallable(final Map<Long, Set<MappedNode>> candidateNextLevel,
-                                                                     final StopWatch total) {
+    private Callable<Map<Long, Set<MappedNode>>> computePathCallable(
+            final Map<Long, Set<MappedNode>> candidateNextLevel,
+            final StopWatch total) {
         return () -> {
             bsCount = 0;
             cmpNbLabel = 0;
@@ -424,13 +424,14 @@ public class PruningAlgorithm extends Algorithm {
         };
     }
 
-  private Map<Long, Map<String, Integer>> queryPaths(final Map<Long, Map<String, Edge>> pathPrefixMap) {
+    private Map<Long, Map<String, Integer>> queryPaths(final Map<Long, Map<String, Edge>> pathPrefixMap) {
 
         Map<Long, Map<String, Integer>> queryPathMap = new HashMap<>();
         for (Long queryNode : query.vertexSet()) {
             Map<String, Integer> pathMap = new HashMap<>();
             Map<String, Edge> prefix = new HashMap<>();
-            dfs(queryNode, new LinkedHashSet<>(), new HashSet<>(), new StringBuilder(), 0, pathMap, prefix, new HashMap<>());
+            dfs(queryNode, new LinkedHashSet<>(), new HashSet<>(), new StringBuilder(), 0, pathMap, prefix,
+                    new HashMap<>());
             queryPathMap.put(queryNode, pathMap);
             pathPrefixMap.put(queryNode, prefix);
         }
@@ -552,7 +553,7 @@ public class PruningAlgorithm extends Algorithm {
             if (!visited.contains(e) && !nextNode.equals(node)) {
                 hasEdges = true;
                 Long temp = e.getLabel();
-                if( length > 0 ){
+                if (length > 0) {
                     sb.append("=");
                 }
                 sb.append(temp);
@@ -567,7 +568,7 @@ public class PruningAlgorithm extends Algorithm {
             Long nextNode = e.getDestination().equals(node) ? e.getSource() : e.getDestination();
             if (!visited.contains(e) && !nextNode.equals(node)) {
                 hasEdges = true;
-                if( length > 0 ){
+                if (length > 0) {
                     sb.append("=");
                 }
                 String temp = e.getLabel().equals(0L) ? "-0" : String.valueOf(-e.getLabel());
@@ -991,8 +992,10 @@ public class PruningAlgorithm extends Algorithm {
         return outMapping;
     }
 
-    private boolean matchesWithPathNeighbor(MappedNode mappedGNode, long qNode, Map<Long, Map<String, Integer>> queryPaths,
-                                            Map<Long, Map<String, Edge>> pathPrefix, StopWatch total) throws DataException {
+    private boolean matchesWithPathNeighbor(MappedNode mappedGNode, long qNode,
+                                            Map<Long, Map<String, Integer>> queryPaths,
+                                            Map<Long, Map<String, Edge>> pathPrefix, StopWatch total)
+            throws DataException {
         BloomFilter<String> bf = gPathTables.get(mappedGNode.getNodeID());
         int count = 0;
         boolean isGood = true;
@@ -1010,16 +1013,16 @@ public class PruningAlgorithm extends Algorithm {
             Edge prefixEdge = prefixMap.get(path.getKey());
             String label = (prefixEdge.getSource().equals(qNode) ? "" : "-") + prefixEdge.getLabel();
             if (!seenPrefixEdges.contains(prefixEdge)) {
-                String prefixTemp = label  + "|" + 1;
+                String prefixTemp = label + "|" + 1;
                 if (!bf.contains(prefixTemp)) {
                     int prefixCount = wildcardPaths.getOrDefault(label, 0);
-                    prefixCount ++;
+                    prefixCount++;
                     wildcardPaths.put(label, prefixCount);
                     String wcPath = path.getKey().replaceFirst(String.valueOf(prefixEdge.getLabel()), "0");
                     count += checkDiff(bf, wcPath, path.getValue());
                     seenPrefixEdges.add(prefixEdge);
                 } else {
-                   count += checkDiff(bf, path.getKey(), path.getValue());
+                    count += checkDiff(bf, path.getKey(), path.getValue());
                 }
             } else {
                 String wcPath = path.getKey().replaceFirst(String.valueOf(prefixEdge.getLabel()), "0");

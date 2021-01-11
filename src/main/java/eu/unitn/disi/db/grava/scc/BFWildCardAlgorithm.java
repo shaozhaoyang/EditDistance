@@ -66,7 +66,7 @@ public class BFWildCardAlgorithm {
             Iterator<Multigraph> iterator = wildCardQueries.iterator();
             int size = wildCardQueries.size();
             List<CompletableFuture<Set<RelatedQuery>>> tasks = new ArrayList<>();
-            for (int i = 0; i < 1; i++) {
+            for (int i = 0; i < size; i++) {
 
                 Multigraph currentQuery = iterator.next();
                 CompletableFuture<List<RelatedQuery>> task = new CompletableFuture<>();
