@@ -280,22 +280,23 @@ public class PruningAlgorithm extends Algorithm {
         }
     }
 
-    private List<Set<MappedNode>> partition(final Set<MappedNode> nodes, final int num) {
+    private List<Set<MappedNode>> partition(final Set<MappedNode> nodes, final int num, final StopWatch watch) {
         List<Set<MappedNode>> partitions = new ArrayList<>(num);
         int size = nodes.size() / num + 1;
         int crtSize = 0;
         int partition = 1;
-        Set<MappedNode> crtSet = new HashSet<>();
+        Set<MappedNode> crtSet = new HashSet<>(size);
         for (MappedNode node : nodes) {
             crtSet.add(node);
             crtSize++;
             if (crtSize > partition * size) {
                 partition++;
                 partitions.add(crtSet);
-                crtSet = new HashSet<>();
+                crtSet = new HashSet<>(size);
             }
         }
         partitions.add(crtSet);
+        System.out.println("paritioning takes " +  watch.getElapsedTimeMillis());
         return partitions;
     }
 
@@ -1046,9 +1047,6 @@ public class PruningAlgorithm extends Algorithm {
                 return false;
             }
         }
-        System.out.println(Thread.currentThread() + " " + qNode + " wildcard size " + wildcardPaths.size() +
-                "paths takes "
-                + total.getElapsedTimeMillis());
         return true;
     }
 
