@@ -123,6 +123,7 @@ public class BFWildCardAlgorithm {
                 pruningAlgorithm.setQuery(wildCardQuery);
                 pruningAlgorithm.setK(neighbourNum);
                 pruningAlgorithm.setgPathTables(graphTableAlgorithm.getPathTables());
+                pruningAlgorithm.setPool(ThreadPoolFactory.getWildcardSearchThreadPool());
 
                 pruningAlgorithm.setThreshold(0);
                 pruningAlgorithm.computeWithPath(watch);

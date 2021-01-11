@@ -17,11 +17,13 @@
  */
 package eu.unitn.disi.db.exemplar.core.algorithms;
 
+import com.google.common.collect.Lists;
 import eu.unitn.disi.db.command.algorithmic.Algorithm;
 import eu.unitn.disi.db.command.algorithmic.AlgorithmInput;
 import eu.unitn.disi.db.command.algorithmic.AlgorithmOutput;
 import eu.unitn.disi.db.command.exceptions.AlgorithmExecutionException;
 import eu.unitn.disi.db.command.util.StopWatch;
+import eu.unitn.disi.db.exemplar.core.RelatedQuery;
 import eu.unitn.disi.db.grava.exceptions.DataException;
 import eu.unitn.disi.db.grava.graphs.BaseMultigraph;
 import eu.unitn.disi.db.grava.graphs.BigMultigraph;
@@ -35,6 +37,7 @@ import eu.unitn.disi.db.grava.utils.Pair;
 import eu.unitn.disi.db.grava.utils.Utilities;
 import eu.unitn.disi.db.grava.vectorization.NeighborTables;
 import eu.unitn.disi.db.grava.vectorization.PathNeighborTables;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -46,6 +49,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Pruning algorithm using neighborhood information for each node.
@@ -87,6 +95,7 @@ public class PruningAlgorithm extends Algorithm {
     private ArrayList<Long> visitSeq;
     private HashMap<Pair<Long, Long>, Set<StructureMapping>> gNodesNextEdgeMapping;
     private HashMap<Pair<Long, Long>, Set<StructureMapping>> gNodesPrevEdgeMapping;
+    private ExecutorService pool;
 
     @AlgorithmOutput
     private Map<Long, Set<MappedNode>> queryGraphMapping;
@@ -140,11 +149,11 @@ public class PruningAlgorithm extends Algorithm {
             candidate = startingNode;
         }
         queryNodeToVisit.add(candidate);
-
-        //Initialize the candidate qnode -> gnode
         for (Long node : queryNodes) {
             candidateNextLevel.put(node, new HashSet<MappedNode>());
         }
+        //Initialize the candidate qnode -> gnode
+
         prefixSelectivities.put(startingNode, (double) 1);
         candidateNextLevel.put(candidate, Utilities.nodesToMappedNodes(graph.vertexSet()));
         Utilities.bsCount = 0;
@@ -231,133 +240,191 @@ public class PruningAlgorithm extends Algorithm {
 
     public void computeWithPath(StopWatch total)
             throws AlgorithmExecutionException {
-        //Initialize the output.
-        bsCount = 0;
-        cmpNbLabel = 0;
-        uptCount = 0;
-        queryGraphMapping = new HashMap<>();
-        prefixSelectivities = new HashMap<Long, Double>();
-        edgeNum = graph.edgeSet().size();
-        //Map<Long,Integer> nodeFrequency;
-        Map<Long, Integer> labelFrequency = new HashMap<>();
-        Map<Long, Set<MappedNode>> candidateNextLevel = new HashMap<>();
-        labelFreq = graph.getLabelFreq();
-        nodeSelectivities = new HashMap<Long, Double>();
-        neighborLabels = new HashMap<Long, Integer>();
-        visitSeq = new ArrayList<Long>();
-        paths = new HashMap<Long, HashSet<Edge>>();
-        candidates = new HashMap<Long, Integer>();
-
-        //Long label;
-        Long candidate, currentQueryNode;
-        MappedNode graphCandidate;
-        numberOfComparison = 0;
-        boolean first = true;
-        Integer frequency;
-        LinkedList<Long> queryNodeToVisit = new LinkedList<>();
-        List<MappedNode> nodesToVisit;
-        Collection<Edge> queryEdges;
-
-        Map<Long, List<Long>> inQueryEdges;
-        Map<Long, List<Long>> outQueryEdges;
-        Collection<Long> queryNodes = query.vertexSet();
-        Set<MappedNode> mappedNodes;
-        Set<Long> visitedQueryNodes = new HashSet<>();
-        int i;
-//        for (Edge e : graphEdges) {
-//            frequency = labelFrequency.get(e.getLabel());
-//            if (frequency == null) {
-//                frequency = 0;
-//            }
-//            frequency++;
-//            labelFrequency.put(e.getLabel(), frequency);
-//        }
-        //Just to try - Candidate is the first
-        if (startingNode == null) {
-            candidate = queryNodes.iterator().next();
-            startingNode = candidate;
-        } else {
-            candidate = startingNode;
+        final int threadPoolSize = ((ThreadPoolExecutor) pool).getMaximumPoolSize();
+        final List<Set<MappedNode>> nodesPartitions = partition(Utilities.nodesToMappedNodes(graph.vertexSet()),
+                threadPoolSize);
+        List<CompletableFuture<Map<Long, Set<MappedNode>>>> tasks = new ArrayList<>();
+        for (int i = 0; i < threadPoolSize; i++) {
+            Map<Long, Set<MappedNode>> candidateNextLevel = candidateNextLevel();
+            Long candidate = null;
+            Collection<Long> queryNodes = query.vertexSet();
+            if (startingNode == null) {
+                candidate = queryNodes.iterator().next();
+                startingNode = candidate;
+            } else {
+                candidate = startingNode;
+            }
+            candidateNextLevel.put(candidate, nodesPartitions.get(i));
+            Callable<Map<Long, Set<MappedNode>>> work = computePathCallable(candidateNextLevel, total);
+            tasks.add(CompletableFuture.supplyAsync(() -> {try {
+                return work.call();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }}, pool));
         }
-        queryNodeToVisit.add(candidate);
-        Map<Long, Map<String, Edge>> pathPrefix = new HashMap<>();
-        Map<Long, Map<String, Integer>> queryPaths = queryPaths(pathPrefix);
-        //Initialize the candidate qnode -> gnode
-        for (Long node : queryNodes) {
-            candidateNextLevel.put(node, new HashSet<>());
-        }
-        prefixSelectivities.put(startingNode, (double) 1);
-        candidateNextLevel.put(candidate, Utilities.nodesToMappedNodes(graph.vertexSet()));
-        Utilities.bsCount = 0;
+
         try {
-            while (!queryNodeToVisit.isEmpty()) {
-
-                currentQueryNode = queryNodeToVisit.poll();
-                visitSeq.add(currentQueryNode);
-                mappedNodes = queryGraphMapping.get(currentQueryNode);
-
-
-                //Compute the valid edges to explore and update the nodes to visit
-//                medium = Utilities.bsCount;
-                inQueryEdges = computeAdjacentNodes(currentQueryNode, visitedQueryNodes, queryNodeToVisit, true);
-                outQueryEdges = computeAdjacentNodes(currentQueryNode, visitedQueryNodes, queryNodeToVisit, false);
-//                System.out.println(medium + " " + Utilities.bsCount);
-                if (candidateNextLevel.containsKey(currentQueryNode)) {
-
-                    nodesToVisit = new ArrayList<MappedNode>();
-                    nodesToVisit.addAll(candidateNextLevel.get(currentQueryNode));
-                    assert mappedNodes == null : String
-                            .format("The current query node %d, has already been explored", currentQueryNode);
-                    mappedNodes = new HashSet<>();
-
-                    //countNodes = 0;
-                    //We should check if ALL the query nodes matches and then add the node
-                    for (i = 0; i < nodesToVisit.size(); i++) {
-                        int testSize = nodesToVisit.size();
-                        graphCandidate = nodesToVisit.get(i);
-
-
-                        if (this.matchesWithPathNeighbor(graphCandidate, currentQueryNode, queryPaths, pathPrefix, total)) {
-
-                            numberOfComparison++;
-                            mappedNodes.add(graphCandidate);
-//                            medium = Utilities.bsCount;
-                            //check if the outgoing-incoming edges matches, if yes add to the next level
-                            mapNodes(graphCandidate, graph.incomingEdgesOf(graphCandidate.getNodeID()), inQueryEdges,
-                                    candidateNextLevel, true);
-                            mapNodes(graphCandidate, graph.outgoingEdgesOf(graphCandidate.getNodeID()), outQueryEdges,
-                                    candidateNextLevel, false);
-
-//                            System.out.println(medium + " " + Utilities.bsCount);
-                        }
-                        System.out.println(Thread.currentThread() + " " + currentQueryNode + " graph node " + graphCandidate + " query "
-                                + "paths takes "
-                                + total.getElapsedTimeMillis());
-                    }
-                    System.out.println(Thread.currentThread() + " " + currentQueryNode + " graph size " + mappedNodes.size() + " query "
-                            + "paths takes "
-                            + total.getElapsedTimeMillis());
-                    queryGraphMapping.put(currentQueryNode, mappedNodes);
-                    candidates.put(currentQueryNode, mappedNodes.size());
-
-                    //add the out edges to the visited ones
-                    visitedQueryNodes.add(currentQueryNode);
-                } else { //No map is possible anymore
-                    break;
+            CompletableFuture.allOf(tasks.toArray(new CompletableFuture<?>[0])).join();
+            System.out.println("join all tasks point " + total.getElapsedTimeMillis());
+            for (CompletableFuture<Map<Long, Set<MappedNode>>> task : tasks) {
+                Map<Long, Set<MappedNode>> crtMap =  task.get();
+                for (Entry<Long, Set<MappedNode>> entry : crtMap.entrySet()) {
+                    Set<MappedNode> nodes = queryGraphMapping.getOrDefault(entry.getKey(), new HashSet<>());
+                    nodes.addAll(entry.getValue());
+                    queryGraphMapping.put(entry.getKey(), nodes);
                 }
             }
-            bsCount = Utilities.bsCount;
-        } catch (DataException ex) {
-            //fatal("Some problems with the data occurred", ex);
-            throw new AlgorithmExecutionException("Some problem with the data occurrred", ex);
-        } catch (Exception ex) {
-            //fatal("Some problem occurred", ex);
-            ex.printStackTrace();
-            throw new AlgorithmExecutionException("Some other problem occurred", ex);
+        } catch (InterruptedException e) {
+            throw new RuntimeException("ie ", e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException("ee", e);
         }
     }
 
-    private Map<Long, Map<String, Integer>> queryPaths(final Map<Long, Map<String, Edge>> pathPrefixMap) {
+    private List<Set<MappedNode>> partition(final Set<MappedNode> nodes, final int num) {
+        List<Set<MappedNode>> partitions = new ArrayList<>(num);
+        int size = nodes.size() / num + 1;
+        int crtSize = 0;
+        int partition = 1;
+        Set<MappedNode> crtSet = new HashSet<>();
+        for (MappedNode node: nodes) {
+            crtSet.add(node);
+            crtSize++;
+            if (crtSize > partition * size) {
+                partition ++;
+                partitions.add(crtSet);
+                crtSet = new HashSet<>();
+            }
+        }
+        partitions.add(crtSet);
+        return partitions;
+    }
+
+    private Map<Long, Set<MappedNode>> candidateNextLevel() {
+        final Map<Long, Set<MappedNode>> candidateNextLevel = new HashMap<>();
+        for (Long node : query.vertexSet()) {
+            candidateNextLevel.put(node, new HashSet<>());
+        }
+        return candidateNextLevel;
+    }
+
+    private Callable<Map<Long, Set<MappedNode>>> computePathCallable(final Map<Long, Set<MappedNode>> candidateNextLevel,
+                                                                     final StopWatch total) {
+        return () -> {
+            bsCount = 0;
+            cmpNbLabel = 0;
+            uptCount = 0;
+            queryGraphMapping = new HashMap<>();
+            edgeNum = graph.edgeSet().size();
+            Map<Long, Integer> labelFrequency = new HashMap<>();
+            labelFreq = graph.getLabelFreq();
+            visitSeq = new ArrayList<Long>();
+            paths = new HashMap<Long, HashSet<Edge>>();
+            candidates = new HashMap<Long, Integer>();
+
+            //Long label;
+            Long candidate, currentQueryNode;
+            MappedNode graphCandidate;
+            numberOfComparison = 0;
+            boolean first = true;
+            Integer frequency;
+            LinkedList<Long> queryNodeToVisit = new LinkedList<>();
+            List<MappedNode> nodesToVisit;
+            Collection<Edge> queryEdges;
+
+            Map<Long, List<Long>> inQueryEdges;
+            Map<Long, List<Long>> outQueryEdges;
+            Collection<Long> queryNodes = query.vertexSet();
+            Set<MappedNode> mappedNodes;
+            Set<Long> visitedQueryNodes = new HashSet<>();
+            int i;
+            //Just to try - Candidate is the first
+            if (startingNode == null) {
+                candidate = queryNodes.iterator().next();
+                startingNode = candidate;
+            } else {
+                candidate = startingNode;
+            }
+            queryNodeToVisit.add(candidate);
+            Map<Long, Map<String, Edge>> pathPrefix = new HashMap<>();
+            Map<Long, Map<String, Integer>> queryPaths = queryPaths(pathPrefix);
+
+            Utilities.bsCount = 0;
+            Map<Long, Set<MappedNode>> crtQueryGraphMapping = new HashMap<>();
+            try {
+                while (!queryNodeToVisit.isEmpty()) {
+
+                    currentQueryNode = queryNodeToVisit.poll();
+                    visitSeq.add(currentQueryNode);
+                    mappedNodes = crtQueryGraphMapping.get(currentQueryNode);
+
+                    //Compute the valid edges to explore and update the nodes to visit
+//                medium = Utilities.bsCount;
+                    inQueryEdges = computeAdjacentNodes(currentQueryNode, visitedQueryNodes, queryNodeToVisit, true);
+                    outQueryEdges = computeAdjacentNodes(currentQueryNode, visitedQueryNodes, queryNodeToVisit, false);
+//                System.out.println(medium + " " + Utilities.bsCount);
+                    if (candidateNextLevel.containsKey(currentQueryNode)) {
+
+                        nodesToVisit = new ArrayList<MappedNode>();
+                        nodesToVisit.addAll(candidateNextLevel.get(currentQueryNode));
+                        assert mappedNodes == null : String
+                                .format("The current query node %d, has already been explored", currentQueryNode);
+                        mappedNodes = new HashSet<>();
+
+                        //countNodes = 0;
+                        //We should check if ALL the query nodes matches and then add the node
+                        for (i = 0; i < nodesToVisit.size(); i++) {
+                            int testSize = nodesToVisit.size();
+                            graphCandidate = nodesToVisit.get(i);
+
+                            if (this.matchesWithPathNeighbor(graphCandidate, currentQueryNode, queryPaths, pathPrefix,
+                                    total)) {
+
+                                numberOfComparison++;
+                                mappedNodes.add(graphCandidate);
+//                            medium = Utilities.bsCount;
+                                //check if the outgoing-incoming edges matches, if yes add to the next level
+                                mapNodes(graphCandidate, graph.incomingEdgesOf(graphCandidate.getNodeID()),
+                                        inQueryEdges,
+                                        candidateNextLevel, true);
+                                mapNodes(graphCandidate, graph.outgoingEdgesOf(graphCandidate.getNodeID()),
+                                        outQueryEdges,
+                                        candidateNextLevel, false);
+
+//                            System.out.println(medium + " " + Utilities.bsCount);
+                            }
+//                            System.out.println(
+//                                    Thread.currentThread() + " " + currentQueryNode + " graph node " + graphCandidate
+//                                            + " query "
+//                                            + "paths takes "
+//                                            + total.getElapsedTimeMillis());
+                        }
+                        System.out.println(
+                                Thread.currentThread() + " " + currentQueryNode + " graph size " + nodesToVisit.size()
+                                        + " query "
+                                        + "paths takes "
+                                        + total.getElapsedTimeMillis());
+                        crtQueryGraphMapping.put(currentQueryNode, mappedNodes);
+                        //add the out edges to the visited ones
+                        visitedQueryNodes.add(currentQueryNode);
+                    } else { //No map is possible anymore
+                        break;
+                    }
+                }
+                bsCount = Utilities.bsCount;
+                return crtQueryGraphMapping;
+            } catch (DataException ex) {
+                //fatal("Some problems with the data occurred", ex);
+                throw new AlgorithmExecutionException("Some problem with the data occurrred", ex);
+            } catch (Exception ex) {
+                //fatal("Some problem occurred", ex);
+                ex.printStackTrace();
+                throw new AlgorithmExecutionException("Some other problem occurred", ex);
+            }
+        };
+    }
+
+  private Map<Long, Map<String, Integer>> queryPaths(final Map<Long, Map<String, Edge>> pathPrefixMap) {
 
         Map<Long, Map<String, Integer>> queryPathMap = new HashMap<>();
         for (Long queryNode : query.vertexSet()) {
@@ -747,15 +814,6 @@ public class PruningAlgorithm extends Algorithm {
 
     public void setQueryPathTables(PathNeighborTables queryPathTables) {
         this.queryPathTables = queryPathTables;
-    }
-
-    private void print() {
-        for (Entry<Long, HashSet<Edge>> en : paths.entrySet()) {
-            System.out.println("node : " + en.getKey() + "edges:");
-            for (Edge e : en.getValue()) {
-                System.out.println(e);
-            }
-        }
     }
 
     private void fastMapNodes(MappedNode currentNode, Long currentQueryNode, Collection<Edge> graphEdges,
@@ -1352,5 +1410,13 @@ public class PruningAlgorithm extends Algorithm {
 
     public void setK(int k) {
         this.k = k;
+    }
+
+    public ExecutorService getPool() {
+        return pool;
+    }
+
+    public void setPool(final ExecutorService pool) {
+        this.pool = pool;
     }
 }
