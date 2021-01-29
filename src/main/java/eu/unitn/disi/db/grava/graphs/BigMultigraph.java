@@ -18,24 +18,20 @@
 package eu.unitn.disi.db.grava.graphs;
 
 import eu.unitn.disi.db.command.exceptions.AlgorithmExecutionException;
+import eu.unitn.disi.db.command.util.StopWatch;
 import eu.unitn.disi.db.grava.exceptions.ParseException;
 import eu.unitn.disi.db.grava.utils.StdOut;
 import eu.unitn.disi.db.grava.utils.Utilities;
+import eu.unitn.disi.db.tool.ThreadPoolFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Stores a big multigraph in multidimensional arrays.
@@ -62,6 +58,7 @@ public class BigMultigraph implements Multigraph, Iterable<Long>  {
     private HashMap<Long, Integer> maxRep;
     private HashMap<Long, Integer> labelMax;
     private Long startingNode;
+    private List<Set<MappedNode>> partitions;
     
     private enum separator {space , tab, unknown };
 
@@ -127,6 +124,31 @@ public class BigMultigraph implements Multigraph, Iterable<Long>  {
             System.out.println(inEdges==null);
         }
         this.findLabelMax();
+        this.partition(Utilities.nodesToMappedNodes(this.vertexSet()));
+    }
+
+    public List<Set<MappedNode>> getPartitions() {
+        return partitions;
+    }
+
+    private List<Set<MappedNode>> partition(final Set<MappedNode> nodes) {
+        int num = ((ThreadPoolExecutor)ThreadPoolFactory.getWildcardSearchThreadPool()).getMaximumPoolSize();
+        partitions = new ArrayList<>(num);
+        int size = nodes.size() / num + 1;
+        int crtSize = 0;
+        int partition = 1;
+        Set<MappedNode> crtSet = new HashSet<>(size);
+        for (MappedNode node : nodes) {
+            crtSet.add(node);
+            crtSize++;
+            if (crtSize > partition * size) {
+                partition++;
+                partitions.add(crtSet);
+                crtSet = new HashSet<>(size);
+            }
+        }
+        partitions.add(crtSet);
+        return partitions;
     }
     
     private void findLabelMax() {

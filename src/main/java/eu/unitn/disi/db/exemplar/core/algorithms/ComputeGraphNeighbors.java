@@ -162,13 +162,13 @@ public class ComputeGraphNeighbors extends Algorithm {
                 labels.remove(size);
             }
         }
-        long outStart = Instant.now().toEpochMilli();
-        long outTime =  outStart - start;
-        if (outTime > 100) {
-            System.out
-                    .println(node + " visited " + visitedNodes + " out size:" + graph.outgoingEdgesOf(node).size() + " "
-                            + " time:" + outTime);
-        }
+//        long outStart = Instant.now().toEpochMilli();
+//        long outTime =  outStart - start;
+//        if (outTime > 100) {
+//            System.out
+//                    .println(node + " visited " + visitedNodes + " out size:" + graph.outgoingEdgesOf(node).size() + " "
+//                            + " time:" + outTime);
+//        }
 
         for (Edge e : graph.incomingEdgesOf(node)) {
             Long nextNode = e.getDestination().equals(node) ? e.getSource() : e.getDestination();
@@ -186,12 +186,12 @@ public class ComputeGraphNeighbors extends Algorithm {
                 sb.setLength(length);
             }
         }
-        long inTime = Instant.now().toEpochMilli() - outStart;
-        if (inTime > 100) {
-            System.out
-                    .println(node + " visited " + visitedNodes + " in size:" + graph.incomingEdgesOf(node).size() + " "
-                            + " time:" + inTime);
-        }
+//        long inTime = Instant.now().toEpochMilli() - outStart;
+//        if (inTime > 100) {
+//            System.out
+//                    .println(node + " visited " + visitedNodes + " in size:" + graph.incomingEdgesOf(node).size() + " "
+//                            + " time:" + inTime);
+//        }
         visitedNodes.remove(node);
         if (labels.size() == 1) {
             addPath(countMap, String.valueOf(labels.get(0)), bf);

@@ -238,8 +238,7 @@ public class PruningAlgorithm extends Algorithm {
     public void computeWithPath(StopWatch total)
             throws AlgorithmExecutionException {
         final int threadPoolSize = ((ThreadPoolExecutor) pool).getMaximumPoolSize();
-        final List<Set<MappedNode>> nodesPartitions = partition(Utilities.nodesToMappedNodes(graph.vertexSet()),
-                threadPoolSize);
+        final List<Set<MappedNode>> nodesPartitions = ((BigMultigraph)graph).getPartitions();
         List<CompletableFuture<Map<Long, Set<MappedNode>>>> tasks = new ArrayList<>();
         for (int i = 0; i < threadPoolSize; i++) {
             Map<Long, Set<MappedNode>> candidateNextLevel = candidateNextLevel();

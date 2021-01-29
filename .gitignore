@@ -20,7 +20,7 @@ graph_*
 .DS_Store
 .AppleDouble
 .LSOverride
-
+*.iml
 # Icon must end with two \r
 Icon
 
