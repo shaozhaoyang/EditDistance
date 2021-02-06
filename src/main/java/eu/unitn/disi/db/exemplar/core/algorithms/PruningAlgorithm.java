@@ -401,8 +401,7 @@ public class PruningAlgorithm extends Algorithm {
                         }
                         System.out.println(
                                 Thread.currentThread() + " " + currentQueryNode + " graph size " + nodesToVisit.size()
-                                        + " query "
-                                        + "paths takes "
+                                        + " query paths takes "
                                         + total.getElapsedTimeMillis());
                         crtQueryGraphMapping.put(currentQueryNode, mappedNodes);
                         //add the out edges to the visited ones
