@@ -124,27 +124,29 @@ public class BigMultigraph implements Multigraph, Iterable<Long>  {
             System.out.println(inEdges==null);
         }
         this.findLabelMax();
-        this.partition(Utilities.nodesToMappedNodes(this.vertexSet()));
+//        int partitionSize = Utilities.nodesToMappedNodes(this.vertexSet()).size() /
+//                ((ThreadPoolExecutor)ThreadPoolFactory.getWildcardSearchThreadPool()).getMaximumPoolSize();
+        int partitionSize = 10;
+
+        this.partition(Utilities.nodesToMappedNodes(this.vertexSet()), partitionSize);
     }
 
     public List<Set<MappedNode>> getPartitions() {
         return partitions;
     }
 
-    private List<Set<MappedNode>> partition(final Set<MappedNode> nodes) {
-        int num = ((ThreadPoolExecutor)ThreadPoolFactory.getWildcardSearchThreadPool()).getMaximumPoolSize();
-        partitions = new ArrayList<>(num);
-        int size = nodes.size() / num + 1;
+    private List<Set<MappedNode>> partition(final Set<MappedNode> nodes, final int partitionSize) {
+        partitions = new ArrayList<>(nodes.size()/partitionSize);
         int crtSize = 0;
         int partition = 1;
-        Set<MappedNode> crtSet = new HashSet<>(size);
+        Set<MappedNode> crtSet = new HashSet<>(partitionSize);
         for (MappedNode node : nodes) {
             crtSet.add(node);
             crtSize++;
-            if (crtSize > partition * size) {
+            if (crtSize > partition * partitionSize) {
                 partition++;
                 partitions.add(crtSet);
-                crtSet = new HashSet<>(size);
+                crtSet = new HashSet<>(partitionSize);
             }
         }
         partitions.add(crtSet);

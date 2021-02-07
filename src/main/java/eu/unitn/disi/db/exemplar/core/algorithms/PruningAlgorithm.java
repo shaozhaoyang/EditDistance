@@ -30,11 +30,14 @@ import eu.unitn.disi.db.grava.graphs.LabelContainer;
 import eu.unitn.disi.db.grava.graphs.MappedNode;
 import eu.unitn.disi.db.grava.graphs.Multigraph;
 import eu.unitn.disi.db.grava.graphs.StructureMapping;
+import eu.unitn.disi.db.grava.scc.PathComputeCallable;
+import eu.unitn.disi.db.grava.scc.PathComputeRecursiveTask;
 import eu.unitn.disi.db.grava.utils.BloomFilter;
 import eu.unitn.disi.db.grava.utils.Pair;
 import eu.unitn.disi.db.grava.utils.Utilities;
 import eu.unitn.disi.db.grava.vectorization.NeighborTables;
 import eu.unitn.disi.db.grava.vectorization.PathNeighborTables;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -50,6 +53,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -93,12 +97,16 @@ public class PruningAlgorithm extends Algorithm {
     private HashMap<Pair<Long, Long>, Set<StructureMapping>> gNodesNextEdgeMapping;
     private HashMap<Pair<Long, Long>, Set<StructureMapping>> gNodesPrevEdgeMapping;
     private ExecutorService pool;
-
+    private ForkJoinPool forkJoinPool;
     @AlgorithmOutput
     private Map<Long, Set<MappedNode>> queryGraphMapping;
     @AlgorithmOutput
     private int numberOfComparison;
     private HashMap<Long, HashSet<Edge>> paths;
+
+    public void setForkJoinPool(final ForkJoinPool forkJoinPool) {
+        this.forkJoinPool = forkJoinPool;
+    }
 
     @Override
     public void compute()
@@ -193,9 +201,6 @@ public class PruningAlgorithm extends Algorithm {
                             mapNodes(graphCandidate, graph.outgoingEdgesOf(graphCandidate.getNodeID()), outQueryEdges,
                                     candidateNextLevel, false);
 //                            System.out.println(medium + " " + Utilities.bsCount);
-                            if (testSize != nodesToVisit.size()) {
-                                System.out.print("");
-                            }
                         }
                     }
 //                    if(currentQueryNode.equals(startingNode)){
@@ -238,8 +243,12 @@ public class PruningAlgorithm extends Algorithm {
     public void computeWithPath(StopWatch total)
             throws AlgorithmExecutionException {
         final int threadPoolSize = ((ThreadPoolExecutor) pool).getMaximumPoolSize();
-        final List<Set<MappedNode>> nodesPartitions = ((BigMultigraph)graph).getPartitions();
+        final List<Set<MappedNode>> nodesPartitions = ((BigMultigraph) graph).getPartitions();
         List<CompletableFuture<Map<Long, Set<MappedNode>>>> tasks = new ArrayList<>();
+        edgeNum = graph.edgeSet().size();
+        queryGraphMapping = new HashMap<>();
+        Map<Long, Map<String, Edge>> pathPrefix = new HashMap<>();
+        Map<Long, Map<String, Integer>> queryPaths = queryPaths(pathPrefix);
         for (int i = 0; i < threadPoolSize; i++) {
             Map<Long, Set<MappedNode>> candidateNextLevel = candidateNextLevel();
             Long candidate = null;
@@ -251,7 +260,18 @@ public class PruningAlgorithm extends Algorithm {
                 candidate = startingNode;
             }
             candidateNextLevel.put(candidate, nodesPartitions.get(i));
-            Callable<Map<Long, Set<MappedNode>>> work = computePathCallable(candidateNextLevel, total);
+//            Callable<Map<Long, Set<MappedNode>>> work = computePathCallable(candidateNextLevel, total);
+            Callable<Map<Long, Set<MappedNode>>> work = new PathComputeCallable(
+                    gPathTables,
+                    query,
+                    graph,
+                    startingNode,
+                    this.threshold,
+                    this.k,
+                    candidateNextLevel,
+                    total
+            );
+
             tasks.add(CompletableFuture.supplyAsync(() -> {
                 try {
                     return work.call();
@@ -279,6 +299,30 @@ public class PruningAlgorithm extends Algorithm {
         }
     }
 
+    public void computeWithPathUsingForkJoin(StopWatch total)
+            throws AlgorithmExecutionException {
+        final List<Set<MappedNode>> nodesPartitions = ((BigMultigraph) graph).getPartitions();
+        List<CompletableFuture<Map<Long, Set<MappedNode>>>> tasks = new ArrayList<>();
+        edgeNum = graph.edgeSet().size();
+        queryGraphMapping = new HashMap<>();
+        Map<Long, Map<String, Edge>> pathPrefix = new HashMap<>();
+        Map<Long, Map<String, Integer>> queryPaths = queryPaths(pathPrefix);
+        PathComputeRecursiveTask work = new PathComputeRecursiveTask(
+                gPathTables,
+                query,
+                graph,
+                startingNode,
+                this.threshold,
+                this.k,
+                nodesPartitions,
+                pathPrefix,
+                queryPaths,
+                total
+        );
+
+        queryGraphMapping.putAll(work.compute());
+    }
+
     private List<Set<MappedNode>> partition(final Set<MappedNode> nodes, final int num, final StopWatch watch) {
         List<Set<MappedNode>> partitions = new ArrayList<>(num);
         int size = nodes.size() / num + 1;
@@ -295,7 +339,7 @@ public class PruningAlgorithm extends Algorithm {
             }
         }
         partitions.add(crtSet);
-        System.out.println("paritioning takes " +  watch.getElapsedTimeMillis());
+        System.out.println("paritioning takes " + watch.getElapsedTimeMillis());
         return partitions;
     }
 
@@ -314,10 +358,7 @@ public class PruningAlgorithm extends Algorithm {
             bsCount = 0;
             cmpNbLabel = 0;
             uptCount = 0;
-            queryGraphMapping = new HashMap<>();
-            edgeNum = graph.edgeSet().size();
-            Map<Long, Integer> labelFrequency = new HashMap<>();
-            labelFreq = graph.getLabelFreq();
+
             visitSeq = new ArrayList<Long>();
             paths = new HashMap<Long, HashSet<Edge>>();
             candidates = new HashMap<Long, Integer>();

@@ -77,9 +77,7 @@ public class BFWildCardAlgorithm {
                     throw new RuntimeException(e);
                 }}, executorService));
 
-
                 System.out.println(Thread.currentThread() + ":one task " + total.getElapsedTimeMillis());
-
             }
             System.out.println(Thread.currentThread() + ":created tasks point " + total.getElapsedTimeMillis());
             try {
@@ -124,9 +122,10 @@ public class BFWildCardAlgorithm {
                 pruningAlgorithm.setK(neighbourNum);
                 pruningAlgorithm.setgPathTables(graphTableAlgorithm.getPathTables());
                 pruningAlgorithm.setPool(ThreadPoolFactory.getWildcardSearchThreadPool());
+                pruningAlgorithm.setForkJoinPool(ThreadPoolFactory.getForkJoinPool());
 
                 pruningAlgorithm.setThreshold(0);
-                pruningAlgorithm.computeWithPath(watch);
+                pruningAlgorithm.computeWithPathUsingForkJoin(watch);
                 System.out.println(queryName + Thread.currentThread() + " pruning takes " + watch.getElapsedTimeMillis());
 
                 Map<Long, Set<MappedNode>> queryGraphMapping = pruningAlgorithm.getQueryGraphMapping();
