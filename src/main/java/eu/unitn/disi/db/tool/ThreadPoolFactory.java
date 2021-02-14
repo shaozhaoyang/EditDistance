@@ -12,6 +12,9 @@ public class ThreadPoolFactory {
     private static ForkJoinPool FORK_JOIN_POOL = null;
 
     public static ExecutorService getWildcardThreadPool() {
+        if (WILDCARD_THREAD_POOL == null) {
+            WILDCARD_THREAD_POOL = Executors.newFixedThreadPool(8);
+        }
         return WILDCARD_THREAD_POOL;
     }
 
@@ -49,5 +52,6 @@ public class ThreadPoolFactory {
         TABLE_COMPUTE_THREAD_POOL.shutdown();
         SEARCH_THREAD_POOL.shutdown();
         WILDCARD_SEARCH_THREAD_POOL.shutdown();
+        FORK_JOIN_POOL.shutdown();
     }
 }
