@@ -317,6 +317,7 @@ public class PruningAlgorithm extends Algorithm {
                 nodesPartitions,
                 pathPrefix,
                 queryPaths,
+                forkJoinPool,
                 total
         );
 

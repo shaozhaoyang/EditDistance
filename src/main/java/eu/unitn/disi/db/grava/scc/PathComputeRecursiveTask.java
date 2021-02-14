@@ -17,6 +17,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveTask;
 
@@ -33,6 +34,7 @@ public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<Mapped
     private int k;
     private Map<Long, BloomFilter<String>> gPathTables;
     private Long startingNode;
+    private ForkJoinPool forkJoinPool;
 
     public PathComputeRecursiveTask(final Map<Long, BloomFilter<String>> gPathTables,
                                     final Multigraph query,
@@ -43,6 +45,7 @@ public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<Mapped
                                     final List<Set<MappedNode>> startingNodeMappedNodes,
                                     final Map<Long, Map<String, Edge>> pathPrefix,
                                     final Map<Long, Map<String, Integer>> queryPaths,
+                                    final ForkJoinPool forkJoinPool,
                                     final StopWatch total) {
         this.startingNode = startingNode;
         this.k = neighbourNum;
@@ -54,6 +57,7 @@ public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<Mapped
         this.total = total;
         this.pathPrefix = pathPrefix;
         this.queryPaths = queryPaths;
+        this.forkJoinPool = forkJoinPool;
         paths = new HashMap<>();
     }
 
@@ -67,10 +71,11 @@ public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<Mapped
 
 
             final PathComputeRecursiveTask subTask1 = new PathComputeRecursiveTask(gPathTables, query, graph, startingNode,
-                    threshold, k, partitions.get(0), pathPrefix, queryPaths, total);
+                    threshold, k, partitions.get(0), pathPrefix, queryPaths, forkJoinPool, total);
             final PathComputeRecursiveTask subTask2 = new PathComputeRecursiveTask(gPathTables, query, graph, startingNode,
-                    threshold, k, partitions.get(1), pathPrefix, queryPaths, total);
-            ForkJoinTask.invokeAll(subTask1, subTask2);
+                    threshold, k, partitions.get(1), pathPrefix, queryPaths, forkJoinPool, total);
+            forkJoinPool.submit(subTask1);
+            forkJoinPool.submit(subTask2);
             Map<Long, Set<MappedNode>> result1 = subTask1.join();
             Map<Long, Set<MappedNode>> result2 = subTask2.join();
             query.vertexSet().forEach(
@@ -78,7 +83,7 @@ public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<Mapped
                             crtQueryGraphMapping.put(queryNode, Sets.union(result1.get(queryNode), result2.get(queryNode)))
             );
             System.out.println(
-                    Thread.currentThread() + " completing " + startingNodeMappedNodes.size()
+                    Thread.currentThread() + " completing " + startingNodeMappedNodes.size() + "："
                             + total.getElapsedTimeMillis());
         } else {
             Map<Long, Set<MappedNode>> candidateNextLevel = candidateNextLevel(startingNodeMappedNodes.get(0));
