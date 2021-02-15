@@ -91,13 +91,13 @@ public class ComputeGraphNeighbors extends Algorithm {
             stringBuilder.setLength(0);
             dfs(node, visitedEdges, visitedNodes, countMap, stringBuilder, 0, bf, labels);
 
-            System.out.println("Total num of paths：" + totalNumOfPath);
             this.pathTables.put(node, bf);
             count ++;
             if (count % 5000 == 0) {
                 System.out.println(Instant.now() + " processed " + count);
             }
         }
+        System.out.println("avg paths: " + (totalNumOfPath * 1.0f / nodeSet.size()));
     }
 
     public void  dfs(Long node, Set<Edge> visited, Set<Long> visitedNodes,
