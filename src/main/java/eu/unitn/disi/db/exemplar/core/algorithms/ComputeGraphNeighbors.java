@@ -85,20 +85,13 @@ public class ComputeGraphNeighbors extends Algorithm {
         for (Long node : nodeSet) {
             BloomFilter<String> bf = new BloomFilter<>(0.001, 1000);
             Map<String, Integer> countMap = new HashMap<>(500);
-            if (node == 76554851849548L) {
-                System.out.println("");
-            }
-            long startTime = Instant.now().toEpochMilli();
             visitedEdges.clear();
             visitedNodes.clear();
             labels.clear();
             stringBuilder.setLength(0);
             dfs(node, visitedEdges, visitedNodes, countMap, stringBuilder, 0, bf, labels);
-            long dfsTime = Instant.now().toEpochMilli() - startTime;
-            if (dfsTime > 100) {
-                System.out.println(node + " takes " + (Instant.now().toEpochMilli() - startTime));
-            }
 
+            System.out.println("Total num of paths：" + totalNumOfPath);
             this.pathTables.put(node, bf);
             count ++;
             if (count % 5000 == 0) {
@@ -204,7 +197,6 @@ public class ComputeGraphNeighbors extends Algorithm {
     	Integer count = countMap.getOrDefault(path, 0);
     	count++;
     	bf.add(path + "|" + count);
-//    	System.out.println(path + "|" + count);
     	countMap.put(path, count);
     	int pathFreq = pathFreqMap.getOrDefault(path, 0);
     	pathFreq++;

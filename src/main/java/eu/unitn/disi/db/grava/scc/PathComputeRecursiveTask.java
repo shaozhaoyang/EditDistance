@@ -64,7 +64,7 @@ public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<Mapped
     @Override
     public Map<Long, Set<MappedNode>> compute() {
         final Map<Long, Set<MappedNode>> crtQueryGraphMapping = new HashMap<>();
-        if (startingNodeMappedNodes.size() > 1) {
+        if (startingNodeMappedNodes.size() > 100) {
             final boolean isEven = startingNodeMappedNodes.size() % 2 == 0;
             final List<List<Set<MappedNode>>> partitions = Lists.partition(startingNodeMappedNodes, isEven ? startingNodeMappedNodes.size() / 2 :
                     startingNodeMappedNodes.size() / 2 + 1);
