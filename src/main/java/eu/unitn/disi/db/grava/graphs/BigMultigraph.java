@@ -42,6 +42,8 @@ import java.util.concurrent.ThreadPoolExecutor;
  * @author Davide Mottin <mottin@disi.unitn.eu>
  */
 public class BigMultigraph implements Multigraph, Iterable<Long>  {
+
+    public static final int PARTITION_SIZE = 100;
     private long[][] inEdges;
     private long[][] outEdges;
     private long lastInVertex;
@@ -126,9 +128,8 @@ public class BigMultigraph implements Multigraph, Iterable<Long>  {
         this.findLabelMax();
 //        int partitionSize = Utilities.nodesToMappedNodes(this.vertexSet()).size() /
 //                ((ThreadPoolExecutor)ThreadPoolFactory.getWildcardSearchThreadPool()).getMaximumPoolSize();
-        int partitionSize = 10;
 
-        this.partition(Utilities.nodesToMappedNodes(this.vertexSet()), partitionSize);
+        this.partition(Utilities.nodesToMappedNodes(this.vertexSet()), PARTITION_SIZE);
     }
 
     public List<Set<MappedNode>> getPartitions() {

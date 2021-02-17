@@ -1,5 +1,6 @@
 package eu.unitn.disi.db.tool;
 
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
@@ -48,10 +49,10 @@ public class ThreadPoolFactory {
     }
 
     public static void shutdownAll() {
-        WILDCARD_THREAD_POOL.shutdown();
-        TABLE_COMPUTE_THREAD_POOL.shutdown();
-        SEARCH_THREAD_POOL.shutdown();
-        WILDCARD_SEARCH_THREAD_POOL.shutdown();
-        FORK_JOIN_POOL.shutdown();
+        Optional.ofNullable(WILDCARD_THREAD_POOL).ifPresent(ExecutorService::shutdown);
+        Optional.ofNullable(TABLE_COMPUTE_THREAD_POOL).ifPresent(ExecutorService::shutdown);
+        Optional.ofNullable(SEARCH_THREAD_POOL).ifPresent(ExecutorService::shutdown);
+        Optional.ofNullable(WILDCARD_SEARCH_THREAD_POOL).ifPresent(ExecutorService::shutdown);
+        Optional.ofNullable(FORK_JOIN_POOL).ifPresent(ExecutorService::shutdown);
     }
 }

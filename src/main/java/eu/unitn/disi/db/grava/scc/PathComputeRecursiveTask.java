@@ -3,6 +3,7 @@ package eu.unitn.disi.db.grava.scc;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import eu.unitn.disi.db.command.util.StopWatch;
+import eu.unitn.disi.db.grava.graphs.BigMultigraph;
 import eu.unitn.disi.db.grava.graphs.Edge;
 import eu.unitn.disi.db.grava.graphs.MappedNode;
 import eu.unitn.disi.db.grava.graphs.Multigraph;
@@ -64,7 +65,7 @@ public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<Mapped
     @Override
     public Map<Long, Set<MappedNode>> compute() {
         final Map<Long, Set<MappedNode>> crtQueryGraphMapping = new HashMap<>();
-        if (startingNodeMappedNodes.size() > 100) {
+        if (startingNodeMappedNodes.size() > 1) {
             final boolean isEven = startingNodeMappedNodes.size() % 2 == 0;
             final List<List<Set<MappedNode>>> partitions = Lists.partition(startingNodeMappedNodes, isEven ? startingNodeMappedNodes.size() / 2 :
                     startingNodeMappedNodes.size() / 2 + 1);
