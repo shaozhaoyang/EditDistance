@@ -66,11 +66,11 @@ public class BFWildCardAlgorithm {
             Iterator<Multigraph> iterator = wildCardQueries.iterator();
             int size = wildCardQueries.size();
             List<CompletableFuture<Set<RelatedQuery>>> tasks = new ArrayList<>();
-            for (int i = 0; i < 1; i++) {
+            for (int i = 0; i < size; i++) {
 
                 Multigraph currentQuery = iterator.next();
                 CompletableFuture<List<RelatedQuery>> task = new CompletableFuture<>();
-                Callable<Set<RelatedQuery>> work = createWork(G, currentQuery, total);
+                Callable<Set<RelatedQuery>> work = createWork(G, currentQuery, i, total);
                 tasks.add(CompletableFuture.supplyAsync(() -> {try {
                     return work.call();
                 } catch (Exception e) {
@@ -102,7 +102,7 @@ public class BFWildCardAlgorithm {
                 + " answer size:" + relatedQueries.size());
     }
 
-    private Callable<Set<RelatedQuery>> createWork(Multigraph graph, Multigraph wildCardQuery, StopWatch watch)
+    private Callable<Set<RelatedQuery>> createWork(Multigraph graph, Multigraph wildCardQuery, int i, StopWatch watch)
             throws AlgorithmExecutionException {
         return () -> {
             Long startingNode;
@@ -122,7 +122,7 @@ public class BFWildCardAlgorithm {
                 pruningAlgorithm.setK(neighbourNum);
                 pruningAlgorithm.setgPathTables(graphTableAlgorithm.getPathTables());
                 pruningAlgorithm.setPool(ThreadPoolFactory.getWildcardSearchThreadPool());
-                pruningAlgorithm.setForkJoinPool(ThreadPoolFactory.getForkJoinPool());
+                pruningAlgorithm.setForkJoinPool(ThreadPoolFactory.getForkJoinPool(i));
 
                 pruningAlgorithm.setThreshold(0);
                 pruningAlgorithm.computeWithPathUsingForkJoin(watch);
