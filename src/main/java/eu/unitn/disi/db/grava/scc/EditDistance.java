@@ -537,14 +537,12 @@ public class EditDistance {
                 }
                 break;
             case PATH:
+            case BOTH:
                 if (algorithmName == AlgorithmName.EXED) {
                     this.runBFEXED();
                 } else {
                     this.runBFWildCard();
                 }
-                break;
-            case BOTH:
-			this.runBothExtension();
                 break;
             default:
                 throw new IllegalArgumentException("Wrong running arguements");

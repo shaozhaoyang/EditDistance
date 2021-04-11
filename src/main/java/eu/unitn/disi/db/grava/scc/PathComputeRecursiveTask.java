@@ -3,12 +3,13 @@ package eu.unitn.disi.db.grava.scc;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import eu.unitn.disi.db.command.util.StopWatch;
-import eu.unitn.disi.db.grava.graphs.BigMultigraph;
+import eu.unitn.disi.db.grava.exceptions.DataException;
 import eu.unitn.disi.db.grava.graphs.Edge;
 import eu.unitn.disi.db.grava.graphs.MappedNode;
 import eu.unitn.disi.db.grava.graphs.Multigraph;
 import eu.unitn.disi.db.grava.utils.BloomFilter;
 import eu.unitn.disi.db.grava.utils.Utilities;
+import eu.unitn.disi.db.grava.vectorization.NeighborTables;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveTask;
 
 public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<MappedNode>>> {
@@ -36,6 +36,8 @@ public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<Mapped
     private Map<Long, BloomFilter<String>> gPathTables;
     private Long startingNode;
     private ForkJoinPool forkJoinPool;
+    private NeighborTables graphTables;
+    private NeighborTables queryTables;
 
     public PathComputeRecursiveTask(final Map<Long, BloomFilter<String>> gPathTables,
                                     final Multigraph query,
@@ -47,7 +49,9 @@ public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<Mapped
                                     final Map<Long, Map<String, Edge>> pathPrefix,
                                     final Map<Long, Map<String, Integer>> queryPaths,
                                     final ForkJoinPool forkJoinPool,
-                                    final StopWatch total) {
+                                    final StopWatch total,
+                                    final NeighborTables graphTables,
+                                    final NeighborTables queryTables) {
         this.startingNode = startingNode;
         this.k = neighbourNum;
         this.gPathTables = gPathTables;
@@ -60,6 +64,8 @@ public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<Mapped
         this.queryPaths = queryPaths;
         this.forkJoinPool = forkJoinPool;
         paths = new HashMap<>();
+        this.graphTables = graphTables;
+        this.queryTables = queryTables;
     }
 
     @Override
@@ -72,9 +78,9 @@ public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<Mapped
 
 
             final PathComputeRecursiveTask subTask1 = new PathComputeRecursiveTask(gPathTables, query, graph, startingNode,
-                    threshold, k, partitions.get(0), pathPrefix, queryPaths, forkJoinPool, total);
+                    threshold, k, partitions.get(0), pathPrefix, queryPaths, forkJoinPool, total, graphTables, queryTables);
             final PathComputeRecursiveTask subTask2 = new PathComputeRecursiveTask(gPathTables, query, graph, startingNode,
-                    threshold, k, partitions.get(1), pathPrefix, queryPaths, forkJoinPool, total);
+                    threshold, k, partitions.get(1), pathPrefix, queryPaths, forkJoinPool, total, graphTables, queryTables);
             forkJoinPool.submit(subTask1);
             forkJoinPool.submit(subTask2);
             Map<Long, Set<MappedNode>> result1 = subTask1.join();
@@ -128,7 +134,10 @@ public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<Mapped
                         int testSize = nodesToVisit.size();
                         graphCandidate = nodesToVisit.get(i);
 
-                        if (this.matchesWithPathNeighbor(graphCandidate, currentQueryNode, queryPaths, pathPrefix,
+                        if (this.matches(graphCandidate, currentQueryNode) && this.matchesWithPathNeighbor(graphCandidate,
+                                currentQueryNode,
+                                queryPaths,
+                                pathPrefix,
                                 total)) {
 
                             mappedNodes.add(graphCandidate);
@@ -159,6 +168,43 @@ public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<Mapped
             }
         }
         return crtQueryGraphMapping;
+    }
+
+    private boolean matches(MappedNode mappedGNode, long qNode) {
+        Map<Long, Integer>[] gNodeTable = graphTables.getNodeMap(mappedGNode.getNodeID());
+        Map<Long, Integer>[] qNodeTable = queryTables.getNodeMap(qNode);
+        Map<Long, Integer> qNodeLevel, gNodeLevel;
+        Set<Long> qSet;
+        int dif = 0;
+
+        for (int i = 0; i < qNodeTable.length && i < gNodeTable.length; i++) {
+            qNodeLevel = qNodeTable[i];
+            gNodeLevel = gNodeTable[i];
+            qSet = qNodeLevel.keySet();
+
+            for (Long label : qSet) {
+                if (label.equals(0L)) {
+                    continue;
+                }
+                if (gNodeLevel.containsKey(label)) {
+                    int count = qNodeLevel.get(label) - gNodeLevel.get(label);
+
+                    if (count > threshold - dif) {
+                        return false;
+                    } else {
+                        if (count > 0) {
+                            dif += count;
+                        }
+                    }
+                } else {
+                    dif += qNodeLevel.get(label);
+                    if (dif > threshold) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     private Map<Long, Set<MappedNode>> candidateNextLevel(final Set<MappedNode> startingNodeMappedNodes) {

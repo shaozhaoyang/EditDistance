@@ -13,6 +13,8 @@ import eu.unitn.disi.db.exemplar.core.algorithms.PruningAlgorithm;
 import eu.unitn.disi.db.grava.exceptions.ParseException;
 import eu.unitn.disi.db.grava.graphs.MappedNode;
 import eu.unitn.disi.db.grava.graphs.Multigraph;
+import eu.unitn.disi.db.grava.utils.BloomFilter;
+import eu.unitn.disi.db.grava.vectorization.NeighborTables;
 import eu.unitn.disi.db.query.WildCardQuery;
 import eu.unitn.disi.db.tool.ThreadPoolFactory;
 import java.io.IOException;
@@ -28,6 +30,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class BFWildCardAlgorithm {
 
@@ -69,8 +72,20 @@ public class BFWildCardAlgorithm {
             for (int i = 0; i < size; i++) {
 
                 Multigraph currentQuery = iterator.next();
+                NeighborTables graphNeighborsTable = graphTableAlgorithm.getNeighborTables();
+
+
+                ComputeGraphNeighbors queryTableAlgorithm = new ComputeGraphNeighbors();
+                queryTableAlgorithm.setNumThreads(((ThreadPoolExecutor)ThreadPoolFactory.getTableComputeThreadPool()).getMaximumPoolSize());
+                queryTableAlgorithm.setK(neighbourNum);
+                queryTableAlgorithm.setMaxDegree(MAX_DEGREE);
+                queryTableAlgorithm.setNodePool(ThreadPoolFactory.getTableComputeThreadPool());
+
+                queryTableAlgorithm.setGraph(currentQuery);
+                queryTableAlgorithm.compute();
+                NeighborTables queryNeighborsTable = queryTableAlgorithm.getNeighborTables();
                 CompletableFuture<List<RelatedQuery>> task = new CompletableFuture<>();
-                Callable<Set<RelatedQuery>> work = createWork(G, currentQuery, i, total);
+                Callable<Set<RelatedQuery>> work = createWork(G, currentQuery, i, total, graphNeighborsTable, queryNeighborsTable);
                 tasks.add(CompletableFuture.supplyAsync(() -> {try {
                     return work.call();
                 } catch (Exception e) {
@@ -102,7 +117,8 @@ public class BFWildCardAlgorithm {
                 + " answer size:" + relatedQueries.size());
     }
 
-    private Callable<Set<RelatedQuery>> createWork(Multigraph graph, Multigraph wildCardQuery, int i, StopWatch watch)
+    private Callable<Set<RelatedQuery>> createWork(Multigraph graph, Multigraph wildCardQuery, int i, StopWatch watch,
+                                                   NeighborTables graphNeighborTable, NeighborTables queryNeighborTable)
             throws AlgorithmExecutionException {
         return () -> {
             Long startingNode;
@@ -120,6 +136,8 @@ public class BFWildCardAlgorithm {
                 pruningAlgorithm.setGraph(graph);
                 pruningAlgorithm.setQuery(wildCardQuery);
                 pruningAlgorithm.setK(neighbourNum);
+                pruningAlgorithm.setGraphTables(graphNeighborTable);
+                pruningAlgorithm.setQueryTables(queryNeighborTable);
                 pruningAlgorithm.setgPathTables(graphTableAlgorithm.getPathTables());
                 pruningAlgorithm.setPool(ThreadPoolFactory.getWildcardSearchThreadPool());
                 pruningAlgorithm.setForkJoinPool(ThreadPoolFactory.getForkJoinPool(i));

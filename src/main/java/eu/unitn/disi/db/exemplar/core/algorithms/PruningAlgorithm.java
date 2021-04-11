@@ -318,7 +318,9 @@ public class PruningAlgorithm extends Algorithm {
                 pathPrefix,
                 queryPaths,
                 forkJoinPool,
-                total
+                total,
+                graphTables,
+                queryTables
         );
 
         queryGraphMapping.putAll(work.compute());
