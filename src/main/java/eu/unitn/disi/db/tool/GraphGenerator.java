@@ -28,8 +28,8 @@ import java.util.stream.Collectors;
  */
 public class GraphGenerator {
 
-    private static final long MAX_NODE_COUNT = 1000000;
-    private static final int MAX_DEGREE = 50;
+    private static final long MAX_NODE_COUNT = 10000;
+    private static final int MAX_DEGREE = 15;
     private long nodeCount = 0;
 
     public GraphGenerator(String fileName) throws IOException {
