@@ -23,7 +23,7 @@ graph_*
 *.iml
 # Icon must end with two \r
 Icon
-
+freebase*
 
 # Thumbnails
 ._*

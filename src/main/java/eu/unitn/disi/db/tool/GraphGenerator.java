@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 public class GraphGenerator {
 
     private static final long MAX_NODE_COUNT = 10000;
-    private static final int MAX_DEGREE = 15;
+    private static final int MAX_DEGREE = 5;
     private long nodeCount = 0;
 
     public GraphGenerator(String fileName) throws IOException {
@@ -54,7 +54,9 @@ public class GraphGenerator {
         FileInputStream fin = new FileInputStream(fileName);
         InputStreamReader xover = new InputStreamReader(fin);
         BufferedReader is = new BufferedReader(xover);
-        BufferedWriter bw = new BufferedWriter(new FileWriter("graph_" + MAX_NODE_COUNT + ".txt", false));
+        BufferedWriter bw = new BufferedWriter(new FileWriter( + MAX_NODE_COUNT + "nodes-sout" + "-d" + MAX_DEGREE +
+                ".graph",
+                false));
         String line;
         // Now read lines of text: the BufferedReader puts them in lines,
         // the InputStreamReader does Unicode conversion, and the
@@ -76,7 +78,7 @@ public class GraphGenerator {
                     continue;
                 }
                 Queue<Edge> edges = edgeMap.getOrDefault(crtNodeId, new PriorityQueue<>(
-                        Comparator.comparingLong(Edge::getDestination).reversed()));
+                        Comparator.comparingLong(Edge::getDestination)));
 
                 Long subjectId = Long.parseLong(words[0]);
                 Long objectId = Long.parseLong(words[1]);
@@ -101,7 +103,7 @@ public class GraphGenerator {
                 } else if (crtNodeId == queue.peek()) {
                     bfs(bw, edgeMap, queue, visited, allNodes, countMap);
                 } else if (crtNodeId > queue.peek()) {
-                    queue.poll();
+                    bfs(bw, edgeMap, queue, visited, allNodes, countMap);
                 }
                 crtNodeId = subjectId;
             }
@@ -171,6 +173,7 @@ public class GraphGenerator {
                 edges = null;
                 nodes = null;
             } else {
+                queue.poll();
                 break;
             }
         }
