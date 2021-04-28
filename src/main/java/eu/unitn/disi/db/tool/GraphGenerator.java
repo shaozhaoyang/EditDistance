@@ -101,8 +101,6 @@ public class GraphGenerator {
         for (Map.Entry<Long, Set<Edge>> entry : edgeMap.entrySet()) {
             count += entry.getValue().size();
         }
-        System.out.println(count);
-        System.out.println(edgeMap.keySet().size());
         return edgeMap;
     }
 

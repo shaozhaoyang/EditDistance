@@ -77,7 +77,7 @@ public class RandomQueryGenerator {
             if (candidates.isEmpty()) {
                 break;
             }
-            while (!candidates.isEmpty()) {
+            if (!candidates.isEmpty() && edgeNum < maxEdgeNum) {
                 Edge edge = getRandomEdge(candidates);
                 int freq = G.getLabelFreq().get(edge.getLabel()).getFrequency();
 //                if (currentFreq + freq <= maxFreq) {
@@ -86,7 +86,6 @@ public class RandomQueryGenerator {
                     currentFreq += freq;
                     Long nextNode = edge.getSource().equals(currentNode) ? edge.getDestination() : edge.getSource();
                     currentNode = RANDOM.nextBoolean() ? nextNode : currentNode;
-                    break;
 //                } else {
 //                    candidates.remove(edge);
 //                    edgesNotWanted.add(edge);
