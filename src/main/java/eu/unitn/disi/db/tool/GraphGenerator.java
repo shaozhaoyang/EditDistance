@@ -38,7 +38,7 @@ public class GraphGenerator {
 
     public GraphGenerator(String fileName) throws IOException {
         final Map<Long, Set<Edge>> edgeMap = read(fileName);
-        for (int i = 25; i <= 25; i += 5) {
+        for (int i = 5; i <= 5; i += 5) {
             bfs(edgeMap, i);
         }
     }
@@ -50,7 +50,7 @@ public class GraphGenerator {
     public static void main(String[] args) throws IOException {
 //		String a = "<http://rdf.freebase.com/ns/award.award_winner>";
 //		System.out.println(a.split("/")[a.split("/").length-1]);
-        GraphGenerator rf = new GraphGenerator("freebase-sout.graph");
+        GraphGenerator rf = new GraphGenerator("graph/1000000nodes-sout.graph");
 //		String a = "<http://rdf.freebase.com/ns/american_football.football_player.footballdb_id>    <http://www.w3
 //		.org/2000/01/rdf-schema#label>    \"footballdb ID\"@en      .";
 //		System.out.println(a.split(" ")[2]);
@@ -207,7 +207,7 @@ public class GraphGenerator {
                 Iterator<Edge> iterator = entry.getValue().iterator();
                 List<Edge> usedEdges = new LinkedList<>();
                 while (iterator.hasNext()) {
-                    if ((crtDegree / visited.size()) < maxDegree || allNodes.size() < MAX_NODE_COUNT) {
+                    if ((crtDegree / visited.size()) < maxDegree && allNodes.size() < MAX_NODE_COUNT) {
                         Edge element = iterator.next();
                         usedEdges.add(element);
                         toVisit.add(element.getDestination());
@@ -219,7 +219,8 @@ public class GraphGenerator {
                     }
                 }
                 write(writer, usedEdges);
-                if ((crtDegree / allNodes.size()) > maxDegree || allNodes.size() < MAX_NODE_COUNT) {
+                if ((crtDegree / allNodes.size()) > maxDegree ||  allNodes.size() < MAX_NODE_COUNT) {
+
                     break;
                 }
             }
