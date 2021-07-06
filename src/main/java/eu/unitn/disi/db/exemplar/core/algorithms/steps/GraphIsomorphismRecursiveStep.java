@@ -177,7 +177,7 @@ public class GraphIsomorphismRecursiveStep extends AlgorithmStep<RelatedQuery> {
                     relatedQueriesPartial.clear();
                 }
                 IsomorphicQuerySearch.isBad = true;
-                error("Memory exausted, so we are returning something but not everything.");
+                error("More than Memory exausted, so we are returning something but not everything.");
                 System.gc();
                 return new LinkedList<>();
             }
@@ -190,8 +190,6 @@ public class GraphIsomorphismRecursiveStep extends AlgorithmStep<RelatedQuery> {
 
         watch.stop();
         List<RelatedQuery> results = new LinkedList<>(relatedQueries);
-        System.out.println(Thread.currentThread() + ":" + graphNodes + " one batch takes " + stopWatch.getElapsedTimeSecs());
-        System.out.println(Thread.currentThread() + ":" + "Answer size:" + relatedQueries.size());
         return results;
     }
 

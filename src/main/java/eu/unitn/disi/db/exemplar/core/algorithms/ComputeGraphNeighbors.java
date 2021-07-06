@@ -89,6 +89,9 @@ public class ComputeGraphNeighbors extends Algorithm {
             visitedNodes.clear();
             labels.clear();
             stringBuilder.setLength(0);
+            if (node == 53905171525048L) {
+                System.out.println();
+            }
             dfs(node, visitedEdges, visitedNodes, countMap, stringBuilder, 0, bf, labels);
 
             this.pathTables.put(node, bf);

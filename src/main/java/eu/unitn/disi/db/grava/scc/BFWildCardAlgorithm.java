@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -59,7 +60,7 @@ public class BFWildCardAlgorithm {
 
         StopWatch total = new StopWatch();
         total.start();
-        Set<RelatedQuery> relatedQueries = new HashSet<>(1000);
+        List<RelatedQuery> relatedQueries = new LinkedList<>();
         System.out.println("starting point " + total.getElapsedTimeMillis());
         if (threshold != 0) {
             WildCardQuery wcq = new WildCardQuery(threshold);
@@ -147,13 +148,14 @@ public class BFWildCardAlgorithm {
                 System.out.println(queryName + Thread.currentThread() + " pruning takes " + watch.getElapsedTimeMillis());
 
                 Map<Long, Set<MappedNode>> queryGraphMapping = pruningAlgorithm.getQueryGraphMapping();
-
-                queryGraphMapping.entrySet().forEach(en -> {
-                    System.out.println(en.getKey() + ": " + en.getValue().size());
-//                en.getValue().forEach(val -> System.out.print(val.getNodeID() + ","));
-//                System.out.println();
-                });
-
+//                StringBuilder sb = new StringBuilder();
+//                queryGraphMapping.entrySet().forEach(en -> {
+//                    sb.append(en.getKey() + ": " + en.getValue().size());
+//                    sb.append(System.lineSeparator());
+////                en.getValue().forEach(val -> System.out.print(val.getNodeID() + ","));
+////                System.out.println();
+//                });
+//                System.out.println(Thread.currentThread() + ": " + sb.toString());
                 try {
                     edAlgorithm.setStartingNode(startingNode);
                     edAlgorithm.setLabelFreq((graph).getLabelFreq());
@@ -162,12 +164,13 @@ public class BFWildCardAlgorithm {
                     edAlgorithm.setNumThreads(this.threadsNum);
                     edAlgorithm.setQueryToGraphMap(pruningAlgorithm.getQueryGraphMapping());
                     edAlgorithm.setLimitedComputation(false);
-                    edAlgorithm.setExecutionPool(ThreadPoolFactory.getWildcardSearchThreadPool());
+                    edAlgorithm.setExecutionPool(ThreadPoolFactory.getSearchThreadPool());
                     edAlgorithm.compute();
                 } catch (AlgorithmExecutionException e) {
                     System.out.println("testing exception" + graph);
                 }
             }
+            System.out.println(queryName + " " + Thread.currentThread() + " results takes " + watch.getElapsedTimeMillis());
             return edAlgorithm.getRelatedQueries();
         };
     }

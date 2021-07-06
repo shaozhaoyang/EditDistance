@@ -77,7 +77,7 @@ public class GraphIsomorphismRecursiveStep extends AlgorithmStep<RelatedQuery> {
                 if (relatedQueriesPartial != null) {
                     relatedQueriesPartial.clear();
                 }
-                error("Memory exausted, so we are returning something but not everything.");
+                error("More than Memory exausted, so we are returning something but not everything.");
                 //System.gc();
                 return new LinkedList<>(relatedQueries);
             }

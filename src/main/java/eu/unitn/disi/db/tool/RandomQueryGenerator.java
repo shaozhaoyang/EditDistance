@@ -2,12 +2,15 @@ package eu.unitn.disi.db.tool;
 
 import eu.unitn.disi.db.grava.graphs.Edge;
 import eu.unitn.disi.db.grava.graphs.Multigraph;
+
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -16,10 +19,11 @@ public class RandomQueryGenerator {
 
     private static final Random RANDOM = new Random();
 
+
     private static void writeToFile(Set<String> query, String node, int maxFreq, int crtFreq) {
         try {
             String fileName =
-                    "queryFolder/1000000nodes" + "/E8" + node + "_" + crtFreq + ".txt";
+                    "queryFolder/10000nodes-d20" + "/E8" + node + "_" + crtFreq + ".txt";
             final BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
             for (String str : query) {
                 writer.write(str);
@@ -40,6 +44,7 @@ public class RandomQueryGenerator {
         return list.get(RANDOM.nextInt(list.size()));
     }
 
+
     public void generateQuery(Multigraph G, List<Long> nodes) {
         int maxEdgeNum = 8;
         Set<String> query = new HashSet<>();
@@ -49,51 +54,53 @@ public class RandomQueryGenerator {
         Long startingNode = null;
 
         while (true) {
-            startingNode =  nodes.get(RANDOM.nextInt(nodes.size()));
+            startingNode = nodes.get(RANDOM.nextInt(nodes.size()));
             if (G.outgoingEdgesOf(startingNode).size() > 1 && G.incomingEdgesOf(startingNode).size() > 1) {
                 break;
             }
         }
         int edgeNum = 0;
         Set<Long> visited = new HashSet<>();
-        Set<Edge> edgesNotWanted = new HashSet<>();
-        Long currentNode = startingNode;
-        visited.add(currentNode);
+        Set<Edge> visitedEdges = new HashSet<>();
+        Long currentNode;
+        LinkedList<Long> toVisit = new LinkedList<>();
+        toVisit.addFirst(startingNode);
+        Random random = new Random();
         while (edgeNum < maxEdgeNum) {
-            Set<Edge> candidates = new HashSet<>();
-            if (RANDOM.nextBoolean()) {
-                for (Edge edge : G.incomingEdgesOf(currentNode)) {
-                    if (!visited.contains(edge.getSource()) && !edgesNotWanted.contains(edge)) {
-                        candidates.add(edge);
-                    }
+            Collections.shuffle(toVisit);
+            currentNode = toVisit.peek();
+            List<Edge> edges = new ArrayList<>();
+            for (Edge edge : G.incomingEdgesOf(currentNode)) {
+                if (!visitedEdges.contains(edge)) {
+                    edges.add(edge);
                 }
+            }
+            for (Edge edge : G.outgoingEdgesOf(currentNode)) {
+                if (!visitedEdges.contains(edge)) {
+                    edges.add(edge);
+                }
+            }
+            if (edges.isEmpty()) {
+                visited.add(currentNode);
+                toVisit.remove(currentNode);
             } else {
-                for (Edge edge : G.outgoingEdgesOf(currentNode)) {
-                    if (!visited.contains(edge.getDestination()) && !edgesNotWanted.contains(edge)) {
-                        candidates.add(edge);
+                int index = random.nextInt(edges.size());
+                query.add(edgeOutput(edges.get(index)));
+                currentFreq += G.getLabelFreq().get(edges.get(index).getLabel()).getFrequency();
+                visitedEdges.add(edges.get(index));
+                if (currentNode.equals(edges.get(index).getSource())) {
+                    if (!visited.contains(edges.get(index).getDestination())) {
+                        toVisit.add(edges.get(index).getDestination());
+                    }
+                } else {
+                    if (!visited.contains(edges.get(index).getSource())) {
+                        toVisit.add(edges.get(index).getSource());
                     }
                 }
-            }
-            if (candidates.isEmpty()) {
-                break;
-            }
-            if (!candidates.isEmpty() && edgeNum < maxEdgeNum) {
-                Edge edge = getRandomEdge(candidates);
-                int freq = G.getLabelFreq().get(edge.getLabel()).getFrequency();
-//                if (currentFreq + freq <= maxFreq) {
-                    query.add(edgeOutput(edge));
-                    edgeNum++;
-                    currentFreq += freq;
-                    Long nextNode = edge.getSource().equals(currentNode) ? edge.getDestination() : edge.getSource();
-                    currentNode = RANDOM.nextBoolean() ? nextNode : currentNode;
-//                } else {
-//                    candidates.remove(edge);
-//                    edgesNotWanted.add(edge);
-//                }
+                edgeNum++;
             }
         }
-
-        if (query.size() >= maxEdgeNum && currentFreq >= maxFreq - 10) {
+        if (currentFreq < maxFreq) {
             writeToFile(query, String.valueOf(startingNode), maxFreq, currentFreq);
         }
     }

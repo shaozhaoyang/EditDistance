@@ -95,6 +95,7 @@ public class Experiement {
                 tableAlgorithm.compute();
             }
             if (Filter.PATH == filter || Filter.BOTH == filter) {
+                tableAlgorithm.compute();
                 tableAlgorithm.computePathFilter();
             }
             System.out.println("loading graph takes " + load.getElapsedTimeMillis());

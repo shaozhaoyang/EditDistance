@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -59,7 +60,7 @@ public class WildCardAlgorithm {
 
         StopWatch total = new StopWatch();
         total.start();
-        Set<RelatedQuery> relatedQueries = new HashSet<>();
+        List<RelatedQuery> relatedQueries = new LinkedList<>();
         if (threshold != 0) {
             HashSet<RelatedQuery> relatedQueriesUnique = new HashSet<>();
             WildCardQuery wcq = new WildCardQuery(threshold);
@@ -147,11 +148,15 @@ public class WildCardAlgorithm {
 
                 Map<Long, Set<MappedNode>> queryGraphMapping = pruningAlgorithm.getQueryGraphMapping();
 
-                queryGraphMapping.entrySet().forEach(en -> {
-                    System.out.println(en.getKey() + ": " + en.getValue().size());
-                    en.getValue().forEach(val -> System.out.print(val.getNodeID() + ","));
-                    System.out.println();
-                });
+//                StringBuilder sb = new StringBuilder();
+//                queryGraphMapping.entrySet().forEach(en -> {
+//                    sb.append(en.getKey() + ": " + en.getValue().size());
+//                    sb.append(System.lineSeparator());
+////                en.getValue().forEach(val -> System.out.print(val.getNodeID() + ","));
+////                System.out.println();
+//                });
+//                System.out.println(Thread.currentThread() + ": " + sb.toString());
+
                 watch.reset();
 
                 try {

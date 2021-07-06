@@ -141,11 +141,11 @@ public class EXEDAlgorithm {
 //			info.setUptCount(pruningAlgorithm.getUptCount());
 //			infoNodes.add(info);
                 queryGraphMapping = pruningAlgorithm.getQueryGraphMapping();
-                queryGraphMapping.entrySet().forEach(en -> {
-                    System.out.println(en.getKey() + ": " + en.getValue().size());
+//                queryGraphMapping.entrySet().forEach(en -> {
+//                    System.out.println(en.getKey() + ": " + en.getValue().size());
 //                    en.getValue().forEach(val -> System.out.print(val.getNodeID() + ","));
 //                    System.out.println();
-                });
+//                });
 //			this.exCandidatesNum = queryGraphMapping.get(startingNode).size();
 //			System.out.println("ex before:" + exCandidatesNum);
 //			pruningAlgorithm.pathFilter();
@@ -172,7 +172,7 @@ public class EXEDAlgorithm {
                 detailedWatch.reset();
             }
         }
-        System.out.println(queryName + " takes " + total.getElapsedTimeMillis()
+        System.out.println(queryName + " total takes " + total.getElapsedTimeMillis()
                 + " answer size:" + relatedQueriesUnique.size());
 //        AnswerManagement.printAnswer(relatedQueriesUnique);
     }

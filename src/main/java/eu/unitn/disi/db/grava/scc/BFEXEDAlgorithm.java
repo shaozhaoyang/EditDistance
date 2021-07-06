@@ -14,6 +14,7 @@ import eu.unitn.disi.db.grava.graphs.MappedNode;
 import eu.unitn.disi.db.grava.graphs.Multigraph;
 import eu.unitn.disi.db.grava.utils.Utilities;
 import eu.unitn.disi.db.grava.vectorization.NeighborTables;
+import eu.unitn.disi.db.tool.AnswerManagement;
 import eu.unitn.disi.db.tool.ThreadPoolFactory;
 import java.io.IOException;
 import java.util.HashSet;
@@ -74,12 +75,24 @@ public class BFEXEDAlgorithm {
         EditDistanceQuerySearch.answerCount = 0;
         StopWatch total = new StopWatch();
         total.start();
+
+        Multigraph Q = new BigMultigraph(queryName, queryName, true);
+        ComputeGraphNeighbors queryTableAlgorithm = new ComputeGraphNeighbors();
+        queryTableAlgorithm.setNumThreads(((ThreadPoolExecutor)ThreadPoolFactory.getTableComputeThreadPool()).getMaximumPoolSize());
+        queryTableAlgorithm.setK(neighbourNum);
+        queryTableAlgorithm.setMaxDegree(MAX_DEGREE);
+        queryTableAlgorithm.setNodePool(ThreadPoolFactory.getTableComputeThreadPool());
+
+        queryTableAlgorithm.setGraph(Q);
+        queryTableAlgorithm.compute();
+        queryTables = queryTableAlgorithm.getNeighborTables();
+
         EditDistanceQuerySearch edAlgorithm = new EditDistanceQuerySearch();
         for (int exprimentTime = 0; exprimentTime < repititions; exprimentTime++) {
             StopWatch watch = new StopWatch();
             watch.start();
 
-            Multigraph Q = new BigMultigraph(queryName, queryName, true);
+
 
             tableAlgorithm = new ComputeGraphNeighbors();
             watch.reset();
@@ -120,15 +133,17 @@ public class BFEXEDAlgorithm {
                 pruningAlgorithm.setQueryTables(queryTables);
                 pruningAlgorithm.setThreshold(this.threshold);
                 pruningAlgorithm.setgPathTables(computeGraphNeighbors.getPathTables());
-                pruningAlgorithm.computeWithPath(detailedWatch);
+                pruningAlgorithm.setPool(ThreadPoolFactory.getWildcardSearchThreadPool());
+                pruningAlgorithm.setForkJoinPool(ThreadPoolFactory.getForkJoinPool(0));
+                pruningAlgorithm.computeWithPathUsingForkJoin(watch);
                 System.out.println("Pruning takes " + detailedWatch.getElapsedTimeMillis());
 
                 queryGraphMapping = pruningAlgorithm.getQueryGraphMapping();
-                queryGraphMapping.entrySet().forEach(en -> {
-                    System.out.println(en.getKey() + ": " + en.getValue().size());
-                    en.getValue().forEach(val -> System.out.print(val.getNodeID() + ","));
-                    System.out.println();
-                });
+//                queryGraphMapping.entrySet().forEach(en -> {
+//                    System.out.println(en.getKey() + ": " + en.getValue().size());
+//                    en.getValue().forEach(val -> System.out.print(val.getNodeID() + ","));
+//                    System.out.println();
+//                });
 
                 watch.reset();
 
@@ -151,7 +166,7 @@ public class BFEXEDAlgorithm {
             }
         }
 
-        System.out.println(queryName + " takes " + total.getElapsedTimeMillis()
+        System.out.println(queryName + " total takes " + total.getElapsedTimeMillis()
                 + " answer size:" + relatedQueriesUnique.size());
 //        AnswerManagement.printAnswer(relatedQueriesUnique);
     }

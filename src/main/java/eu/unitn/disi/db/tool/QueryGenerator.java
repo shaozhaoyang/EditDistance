@@ -20,89 +20,89 @@ public class QueryGenerator {
     private static final Random RANDOM = new Random();
 
     public static void main(String[] args) throws IOException, ParseException {
-        String graphName = "graph/10000nodes-d5";
+        String graphName = "graph/10000nodes-d20";
 
         Multigraph G = new BigMultigraph(graphName + "-sin.graph", graphName
                 + "-sout.graph");
         RandomQueryGenerator queryGenerator = new RandomQueryGenerator();
         List<Long> nodes = new ArrayList<>(G.vertexSet());
-        for (int i = 0; i < 50000; i++) {
+        for (int i = 0; i < 100; i++) {
             queryGenerator.generateQuery(G, nodes);
         }
     }
 
-    private static void generateQuery(Multigraph G) {
-        int maxEdgeNum = 8;
-        int current = 0;
-        List<Long> nodes = new ArrayList<>(G.vertexSet());
-        Set<String> query = new HashSet<>();
-        Set<Long> labels = new HashSet<>();
-        int currentFreq = 0;
-        int maxFreq = 2000;
-        int degree = 4;
-        LinkedList<Long> queue = new LinkedList<>();
-        Long startingNode = nodes.get(RANDOM.nextInt(nodes.size()));
-        queue.add(startingNode);
-        int edgeNum = 0;
-        Set<Long> visited = new HashSet<>();
-        while (!queue.isEmpty()) {
-            Long currentNode = queue.pollFirst();
-            visited.add(currentNode);
-            Set<Edge> candidates = new HashSet<>();
-            for (Edge edge : G.incomingEdgesOf(currentNode)) {
-                if (!visited.contains(edge.getSource())) {
-                    candidates.add(edge);
-                }
-            }
-            for (Edge edge : G.outgoingEdgesOf(currentNode)) {
-                if (!visited.contains(edge.getDestination())) {
-                    candidates.add(edge);
-                }
-            }
-            if (candidates.size() < degree) {
-                continue;
-            }
-            int count = 0;
-            while (count < degree) {
-                Edge edge = getRandomEdge(candidates);
-                Long nextNode = edge.getSource().equals(currentNode) ? edge.getDestination() : edge.getSource();
-                int freq = G.getLabelFreq().get(edge.getLabel()).getFrequency();
-                if (!visited.contains(nextNode) && currentFreq + freq <= maxFreq) {
-                    query.add(edgeOutput(edge));
-                    queue.add(nextNode);
-                    count ++;
-                    edgeNum++;
-                    currentFreq += freq;
-                    visited.add(nextNode);
-                }
-                candidates.remove(edge);
-
-                if (edgeNum >= maxEdgeNum || candidates.isEmpty()) {
-                    break;
-                }
-            }
-            if (edgeNum >= maxEdgeNum) {
-                break;
-            }
-        }
-        if (edgeNum >= maxEdgeNum) {
-            writeToFile(query, String.valueOf(startingNode + "_freq_" + currentFreq));
-        }
-    }
-
-    private static void writeToFile(Set<String> query, String node) {
-        try {
-            String fileName = "queryFolder/10000nodes-d5/E8" + node + ".txt";
-            final BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
-            for (String str : query) {
-                writer.write(str);
-                writer.newLine();
-            }
-            writer.close();
-        } catch (IOException e) {
-            System.out.println(e);
-        }
-    }
+//    private static void generateQuery(Multigraph G) {
+//        int maxEdgeNum = 8;
+//        int current = 0;
+//        List<Long> nodes = new ArrayList<>(G.vertexSet());
+//        Set<String> query = new HashSet<>();
+//        Set<Long> labels = new HashSet<>();
+//        int currentFreq = 0;
+//        int maxFreq = 2000;
+//        int degree = 4;
+//        LinkedList<Long> queue = new LinkedList<>();
+//        Long startingNode = nodes.get(RANDOM.nextInt(nodes.size()));
+//        queue.add(startingNode);
+//        int edgeNum = 0;
+//        Set<Long> visited = new HashSet<>();
+//        while (!queue.isEmpty()) {
+//            Long currentNode = queue.pollFirst();
+//            visited.add(currentNode);
+//            Set<Edge> candidates = new HashSet<>();
+//            for (Edge edge : G.incomingEdgesOf(currentNode)) {
+//                if (!visited.contains(edge.getSource())) {
+//                    candidates.add(edge);
+//                }
+//            }
+//            for (Edge edge : G.outgoingEdgesOf(currentNode)) {
+//                if (!visited.contains(edge.getDestination())) {
+//                    candidates.add(edge);
+//                }
+//            }
+//            if (candidates.size() < degree) {
+//                continue;
+//            }
+//            int count = 0;
+//            while (count < degree) {
+//                Edge edge = getRandomEdge(candidates);
+//                Long nextNode = edge.getSource().equals(currentNode) ? edge.getDestination() : edge.getSource();
+//                int freq = G.getLabelFreq().get(edge.getLabel()).getFrequency();
+//                if (!visited.contains(nextNode) && currentFreq + freq <= maxFreq) {
+//                    query.add(edgeOutput(edge));
+//                    queue.add(nextNode);
+//                    count ++;
+//                    edgeNum++;
+//                    currentFreq += freq;
+//                    visited.add(nextNode);
+//                }
+//                candidates.remove(edge);
+//
+//                if (edgeNum >= maxEdgeNum || candidates.isEmpty()) {
+//                    break;
+//                }
+//            }
+//            if (edgeNum >= maxEdgeNum) {
+//                break;
+//            }
+//        }
+//        if (edgeNum >= maxEdgeNum) {
+//            writeToFile(query, String.valueOf(startingNode + "_freq_" + currentFreq));
+//        }
+//    }
+//
+//    private static void writeToFile(Set<String> query, String node) {
+//        try {
+//            String fileName = "queryFolder/10000nodes-d10/E8" + node + ".txt";
+//            final BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+//            for (String str : query) {
+//                writer.write(str);
+//                writer.newLine();
+//            }
+//            writer.close();
+//        } catch (IOException e) {
+//            System.out.println(e);
+//        }
+//    }
 
     private static String edgeOutput(Edge edge) {
         return edge.getSource() + " " + edge.getDestination() + " " + edge.getLabel();

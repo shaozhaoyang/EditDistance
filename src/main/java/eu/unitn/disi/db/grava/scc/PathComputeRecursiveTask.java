@@ -71,6 +71,7 @@ public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<Mapped
     @Override
     public Map<Long, Set<MappedNode>> compute() {
         final Map<Long, Set<MappedNode>> crtQueryGraphMapping = new HashMap<>();
+//        if (startingNodeMappedNodes.size() > 1) {
         if (startingNodeMappedNodes.size() > 1) {
             final boolean isEven = startingNodeMappedNodes.size() % 2 == 0;
             final List<List<Set<MappedNode>>> partitions = Lists.partition(startingNodeMappedNodes, isEven ? startingNodeMappedNodes.size() / 2 :
@@ -89,9 +90,6 @@ public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<Mapped
                     queryNode ->
                             crtQueryGraphMapping.put(queryNode, Sets.union(result1.get(queryNode), result2.get(queryNode)))
             );
-            System.out.println(
-                    Thread.currentThread() + " completing " + startingNodeMappedNodes.size() + "："
-                            + total.getElapsedTimeMillis());
         } else {
             Map<Long, Set<MappedNode>> candidateNextLevel = candidateNextLevel(startingNodeMappedNodes.get(0));
 
@@ -133,6 +131,8 @@ public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<Mapped
                     for (i = 0; i < nodesToVisit.size(); i++) {
                         int testSize = nodesToVisit.size();
                         graphCandidate = nodesToVisit.get(i);
+
+
 
                         if (this.matches(graphCandidate, currentQueryNode) && this.matchesWithPathNeighbor(graphCandidate,
                                 currentQueryNode,
@@ -211,7 +211,7 @@ public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<Mapped
         final Map<Long, Set<MappedNode>> candidateNextLevel = new HashMap<>();
         for (Long node : query.vertexSet()) {
             if (startingNode.equals(node)) {
-                candidateNextLevel.put(node, startingNodeMappedNodes);
+                candidateNextLevel.put(node, new HashSet<>(startingNodeMappedNodes));
             } else {
                 candidateNextLevel.put(node, new HashSet<>());
             }
@@ -269,6 +269,9 @@ public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<Mapped
     private boolean matchesWithPathNeighbor(MappedNode mappedGNode, long qNode,
                                             Map<Long, Map<String, Integer>> queryPaths,
                                             Map<Long, Map<String, Edge>> pathPrefix, StopWatch total) {
+        if (mappedGNode.getNodeID() == 53905171525048L && qNode == 788376907748L) {
+            System.out.println();
+        }
         BloomFilter<String> bf = gPathTables.get(mappedGNode.getNodeID());
         int count = 0;
         boolean isGood = true;
@@ -294,8 +297,14 @@ public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<Mapped
                     String wcPath = path.getKey().replaceFirst(String.valueOf(prefixEdge.getLabel()), "0");
                     count += checkDiff(bf, wcPath, path.getValue());
                     seenPrefixEdges.add(prefixEdge);
+                    if (count > this.threshold) {
+                        return false;
+                    }
                 } else {
                     count += checkDiff(bf, path.getKey(), path.getValue());
+                    if (count > this.threshold) {
+                        checkDiff(bf, path.getKey(), path.getValue());
+                    }
                 }
             } else {
                 String wcPath = path.getKey().replaceFirst(String.valueOf(prefixEdge.getLabel()), "0");
@@ -323,10 +332,10 @@ public class PathComputeRecursiveTask extends RecursiveTask<Map<Long, Set<Mapped
     }
 
     private int checkDiff(BloomFilter<String> bf, String path, int count) {
-        for (int i = count; i > 0; i--) {
+        for (int i = 1; i <= count; i++) {
             String temp = path + "|" + i;
             if (!bf.contains(temp)) {
-                return i;
+                return count - i + 1;
             }
         }
         return 0;
