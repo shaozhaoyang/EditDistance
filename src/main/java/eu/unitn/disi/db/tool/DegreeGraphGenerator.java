@@ -36,7 +36,7 @@ public class DegreeGraphGenerator {
         final Map<Long, Set<Edge>> graphEdges = read(graphFileName);
         final Map<Long, Set<Edge>> subGraphEdges = read(subGraphName);
         int crtDegree = 5;
-        for (int i = 1; i <= 25; i += 1) {
+        for (int i = 1; i <= 40; i += 1) {
             bfs(graphEdges, subGraphEdges, i + crtDegree, i);
         }
     }
@@ -141,7 +141,8 @@ public class DegreeGraphGenerator {
         write(writer, subGraphEdgeMap.values().stream().flatMap(Set::stream).collect(Collectors.toList()));
 
 //        System.out.println(allNodes.size());
-        System.out.println("avg degree:" + crtDegree / (subGraphEdgeMap.keySet().size()));
+        System.out.println("file name:" + MAX_NODE_COUNT + "nodes-sout" + "-d" + maxDegree +
+            ".graph" + " avg degree:" + crtDegree / (subGraphEdgeMap.keySet().size()));
         writer.flush();
         writer.close();
     }
