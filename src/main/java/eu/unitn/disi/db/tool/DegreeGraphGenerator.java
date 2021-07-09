@@ -8,12 +8,14 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -34,7 +36,7 @@ public class DegreeGraphGenerator {
         final Map<Long, Set<Edge>> graphEdges = read(graphFileName);
         final Map<Long, Set<Edge>> subGraphEdges = read(subGraphName);
         int crtDegree = 5;
-        for (int i = 5; i <= 5; i += 5) {
+        for (int i = 1; i <= 25; i += 1) {
             bfs(graphEdges, subGraphEdges, i + crtDegree, i);
         }
     }
@@ -46,7 +48,8 @@ public class DegreeGraphGenerator {
     public static void main(String[] args) throws IOException {
 //		String a = "<http://rdf.freebase.com/ns/award.award_winner>";
 //		System.out.println(a.split("/")[a.split("/").length-1]);
-        DegreeGraphGenerator rf = new DegreeGraphGenerator("graph/1000000nodes-sout.graph", "graph/10000nodes-d10-sout.graph");
+        DegreeGraphGenerator rf = new DegreeGraphGenerator("freebase-sout.graph", "graph/10000nodes-d5" +
+            "-sout.graph");
 //		String a = "<http://rdf.freebase.com/ns/american_football.football_player.footballdb_id>    <http://www.w3
 //		.org/2000/01/rdf-schema#label>    \"footballdb ID\"@en      .";
 //		System.out.println(a.split(" ")[2]);
@@ -135,6 +138,7 @@ public class DegreeGraphGenerator {
             write(writer, newEdges);
         }
 
+        write(writer, subGraphEdgeMap.values().stream().flatMap(Set::stream).collect(Collectors.toList()));
 
 //        System.out.println(allNodes.size());
         System.out.println("avg degree:" + crtDegree / (subGraphEdgeMap.keySet().size()));
@@ -142,7 +146,7 @@ public class DegreeGraphGenerator {
         writer.close();
     }
 
-    private void write(final BufferedWriter writer, final List<Edge> edges) throws IOException {
+    private void write(final BufferedWriter writer, final Collection<Edge> edges) throws IOException {
         for (Edge e : edges) {
             writer.write(e.getSource() + " " + e.getDestination() + " " + e.getLabel());
             writer.newLine();
